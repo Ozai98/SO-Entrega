@@ -12,67 +12,62 @@ struct Node{
 	struct Node* next;
 	struct Node* prev;
 };
-
+//  Inicia la estructura
 void dllInit(void* p){
-  struct List* list = p;
-  list->size = 0;
-  list->head = (struct Node*)malloc(sizeof(struct Node));
-  list->head->data = 0;
-  list->head->next = list->tail;
-  list->head->prev = NULL;
-  list->curr = list->head;
-}
-void dllInit2(void* p){
   struct List* list = p;
   list->size = 0;
   list->head = NULL;
   list->curr = list->head;
 }
-
-void dllPrintAll(void* p){
+// Verifica si la estructura está vacía
+int dllIsEmpty(void* p){
   struct List* list = p;
-  printf("list size: %i\n", list->size);
-  struct Node* currNode = (struct Node*)malloc(sizeof(struct Node));
-  currNode = list->head;
-  while(currNode->next != NULL){
-    currNode = currNode->next;
-    printf("%ld\n", currNode->data);
-  }
+  return list->head == NULL;
 }
-void dllPrintAll2(void* p){
+//  Rebobina la estructura
+void dllRewind(void* p){
   struct List* list = p;
-  printf("list size: %i\n", list->size);
-  struct Node* currNode = (struct Node*)malloc(sizeof(struct Node));
-  currNode = list->head;
-  while(currNode->next != NULL){
-    printf("%ld\n", currNode->data);
-    currNode = currNode->next;
-  }
+  list->curr = list->head;
 }
-
+//  Verifica si el nodo actual tiene siguiente
+int dllHasNext(void* p){
+  struct List* list = p;
+  if(dllIsEmpty(list)){
+    perror("Error dllHasNext of a empty list");
+    exit(-1);
+  }
+  if(list->curr->next != NULL)
+  return 1;
+  return 0;
+}
+//  Retorna el nodo actual y lo mueve al siguiente
+long dllNext(void* p){
+  struct List* list = p;
+  if(dllHasNext2(list)){
+    list->curr = list->curr->next;
+    return list->curr->prev->data;
+  }
+  perror("Error at call dllNext()");
+  exit(-1);
+}
+//  Obtiene el dato del nodo actual
 long dllGetCurrData(void* p){
-  struct List* list = p;
-  return list->curr->data;
-}
-long dllGetCurrData2(void* p){
   struct List* list = p;
   if(list->curr != NULL)
     return list->curr->data;
   perror("Error getCurrData of NULL");
   exit(-1);
 }
-
-void dllAddHead(void* p, long data){
+//  Asigna el dato l nodo actual
+void dllSetCurrData(void* p, long data){
   struct List* list = p;
-  struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
-  newNode->data = data;
-  newNode->prev = list->head;
-  newNode->next = list->head->next;
-  list->tail->prev->next = newNode;
-  list->tail->prev = newNode;
-  list->size += 1;
+  if(list->curr != NULL)
+    list->curr->data = data;
+  perror("Error setCurrData of NULL");
+  exit(-1);
 }
-void dllAddHead2(void* p, long data){
+//  Añade como cabeza un nodo a la estructura
+void dllAddHead(void* p, long data){
   struct List* list = p;
   struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
   newNode->data = data;
@@ -82,97 +77,51 @@ void dllAddHead2(void* p, long data){
   list->head = newNode;
   list->size += 1;
 }
-
-int dllIsEmpty(void* p){
-  struct List* list = p;
-  return list->head == NULL;
-}
-
-void dllRewind(void* p){
-  struct List* list = p;
-  list->curr = list->head;
-}
-
-int dllHasNext(void* p){
-  struct List* list = p;
-  if(list->curr->next != list->tail)
-    return 1;
-  return 0;
-}
-int dllHasNext2(void* p){
-  struct List* list = p;
-  if(dllIsEmpty(list)){
-    perror("Error dllHasNext of a empty list");
-    exit(-1);
-  }
-  if(list->curr->next != NULL)
-    return 1;
-  return 0;
-}
-
-long dllNext(void* p){
-  struct List* list = p;
-  if(list->curr->next != list->tail){
-    list->curr = list->curr->next;
-    return list->curr->data;
-  }
-  perror("Error at call dllNext()");
-  exit(-1);
-}
-long dllNext2(void* p){
-  struct List* list = p;
-  if(dllHasNext2(list)){
-    list->curr = list->curr->next;
-    return list->curr->prev->data;
-  }
-  perror("Error at call dllNext()");
-  exit(-1);
-}
-
-void dllSetDataCurr(void* p, long data){
-  struct List* list = p;
-  if(list->curr == list->head){
-    perror("Error can't delete head");
-    exit(-1);
-  }
-  list->curr->data = data;
-  // list->curr->next->prev->data = data;
-  // TODO: Corregir si falla borrar registro
-}
-void dllSetDataCurr2(void* p, long data){
-  struct List* list = p;
-  if(list->curr == list->head){
-    perror("Error can't delete head");
-    exit(-1);
-  }
-  list->curr->data = data;
-  // list->curr->next->prev->data = data;
-  // TODO: Corregir si falla borrar registro
-}
-
+//  Retorna el valor del nodo actual y elimina el nodo
 long dllDeleteCurr(void* p){
   struct List* list = p;
-  if(list->curr == list->head){
-    perror("Error can't delete head");
+
+  if(dllIsEmpty(list)){
+    perror("Error can't delete from empty list");
     exit(-1);
   }
-  list->curr->prev->next = list->curr->next;
-  free(list->curr->next->prev);
-  list->curr->next->prev = list->curr->prev;
-  list->curr = list->curr->prev;
+  // Proceso para lista unitaria y borrar cabeza
+  if(list->curr == list->head){
+    list->head = list->head->next;
+  }
+  // Proceso para intermedios y final
+  else{
+    list->curr->prev->next = list->curr->next;
+    if(list->curr->next != NULL)
+      list->curr->next->prev = list->curr->prev;
+  }
+  long data = list->curr->data;
+  free(list->curr);
+  list->curr = list->head;
   list->size -= 1;
+  return data;
 }
-
-
-void dllFree(void* p){
+//  Imprime el dato de cada uno de los nodos de la estructura
+void dllPrintAll(void* p){
   struct List* list = p;
-  struct Node* currNode = (struct Node*)malloc(sizeof(struct Node));
-  currNode = list->head->next;
-  while(currNode != list->tail){
-    free(currNode->prev);
+  printf("list size: %i\n", list->size);
+  struct Node* currNode = list->head;
+  while(!dllIsEmpty(list) && currNode->next != NULL){
+    printf("%ld\n", currNode->data);
     currNode = currNode->next;
   }
-  free(list->tail);
-  free(list->curr);
-  free(currNode);
+  printf("%ld\n", currNode->data);
+}
+//  Libera cada uno de los nodos de la estructura y la estructura misma
+void dllFree(void* p){
+  struct List* list = p;
+  struct Node* currNode = list->head;
+  if(!dllIsEmpty(list))
+    while(currNode->next != NULL){
+      currNode = currNode->next;
+      free(currNode->prev);
+    }
+    free(currNode);
+  }
+  free(list);
 }
