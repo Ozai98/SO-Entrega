@@ -37,18 +37,17 @@ int dllHasNext(void* p){
     exit(-1);
   }
   if(list->curr->next != NULL)
-  return 1;
+    return 1;
   return 0;
 }
 //  Retorna el nodo actual y lo mueve al siguiente
 long dllNext(void* p){
   struct List* list = p;
-  if(dllHasNext2(list)){
+  if(dllHasNext(list)){
     list->curr = list->curr->next;
     return list->curr->prev->data;
   }
-  perror("Error at call dllNext()");
-  exit(-1);
+  printf("%s\n","Error at call dllNext()\n");
 }
 //  Obtiene el dato del nodo actual
 long dllGetCurrData(void* p){
@@ -63,8 +62,10 @@ void dllSetCurrData(void* p, long data){
   struct List* list = p;
   if(list->curr != NULL)
     list->curr->data = data;
-  perror("Error setCurrData of NULL");
-  exit(-1);
+  else{
+    perror("Error setCurrData of NULL");
+    exit(-1);
+  }
 }
 //  Añade como cabeza un nodo a la estructura
 void dllAddHead(void* p, long data){
@@ -73,8 +74,10 @@ void dllAddHead(void* p, long data){
   newNode->data = data;
   newNode->prev = NULL;
   newNode->next = list->head;
-  list->head->prev = newNode;
+  if(!dllIsEmpty(list))
+    list->head->prev = newNode;
   list->head = newNode;
+  list->curr = list->head;
   list->size += 1;
 }
 //  Retorna el valor del nodo actual y elimina el nodo
@@ -106,17 +109,19 @@ void dllPrintAll(void* p){
   struct List* list = p;
   printf("list size: %i\n", list->size);
   struct Node* currNode = list->head;
-  while(!dllIsEmpty(list) && currNode->next != NULL){
+  if(!dllIsEmpty(list)){
+    while(currNode->next != NULL){
+      printf("%ld\n", currNode->data);
+      currNode = currNode->next;
+    }
     printf("%ld\n", currNode->data);
-    currNode = currNode->next;
   }
-  printf("%ld\n", currNode->data);
 }
 //  Libera cada uno de los nodos de la estructura y la estructura misma
 void dllFree(void* p){
   struct List* list = p;
   struct Node* currNode = list->head;
-  if(!dllIsEmpty(list))
+  if(!dllIsEmpty(list)){
     while(currNode->next != NULL){
       currNode = currNode->next;
       free(currNode->prev);
