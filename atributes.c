@@ -29,7 +29,7 @@ struct dogType{
 void showDogType(void *p){
 	struct dogType *dog = p;
   printf("Id:\t%u\n",dog->id);
-  printf("Nombre:\t%s",dog->name);
+  printf("Nombre:\t%s\n",dog->name);
   printf("Tipo:\t%s\n",dog->type);
 	printf("Edad:\t%hu\n",dog->age);
   printf("Raza:\t%s\n",dog->breed);
