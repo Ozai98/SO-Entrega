@@ -23,12 +23,10 @@
 // void htInit(void** p){
 // 	struct List** hashTable = (struct List**)p;
 void htInit(struct List* hashTable[HASH_TABLE_SIZE]){
-	// hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-	printf("size %i\n", HASH_TABLE_SIZE);
+	hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
 	int i=0;
 	for(i=0; i<HASH_TABLE_SIZE; i++){
 		hashTable[i] = NULL;
-		printf("%lu\n", hashTable[i]);
 	}
 }
 
@@ -99,11 +97,10 @@ void htFree(struct List* list[HASH_TABLE_SIZE]){
 // htupdate = htLoad (furrFilePointer)
 
 int main(){
-	void* p = malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
 	// void* p = (void*)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-	struct Lis1t* hashTable[HASH_TABLE_SIZE] = (struct List**)p;
-	// htInit(hashTable);
-	// htLoad(hashTable);
+	struct List* hashTable[HASH_TABLE_SIZE];
+	htInit(hashTable);
+	htLoad(hashTable);
 	// confirmar con htSearch
 	return 0;
 }
