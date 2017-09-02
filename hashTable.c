@@ -23,10 +23,12 @@
 // void htInit(void** p){
 // 	struct List** hashTable = (struct List**)p;
 void htInit(struct List* hashTable[HASH_TABLE_SIZE]){
-	hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+	printf("htinit puntero hashTable: %lu\n", (long)hashTable);
+
 	int i=0;
 	for(i=0; i<HASH_TABLE_SIZE; i++){
 		hashTable[i] = NULL;
+		// printf("init i%i\t%ld\n", i, (long)hashTable[i]);
 	}
 }
 
@@ -61,17 +63,17 @@ void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
 		// showDogType(currDog);
 		code = htHashFunction(currDog->name);
-		printf("nombre y su hash\t\t%s\t%i\n", currDog->name, code);
-
-		printf("puntero de hashtable en code\t%lu\n", (long)hashTable[code]);
+		// printf("nombre y su hash\t\t%s\t%i\n", currDog->name, code);
+		//
+		// printf("puntero de hashtable en code\t%lu\n", (long)hashTable[code]);
 
 
 	  hashTable[code] = (struct List*)malloc(sizeof(struct List));
-		// if(hashTable[code] == NULL){
-		// 	dllInit(hashTable[code]);
-		// 	// dllAddHead(hashTable[code], filePointer);
-		// }
-		printf("puntero de hashtable en code\t%lu\n", (long)hashTable[code]);
+		if(hashTable[code] == NULL){
+			dllInit(hashTable[code]);
+			// dllAddHead(hashTable[code], filePointer);
+		}
+		// printf("puntero de hashtable en code\t%lu\n", (long)hashTable[code]);
 
 		// printf("\t%i\n", (int)filePointer);
 		// dllPrintAll(hashTable[code]);
@@ -98,8 +100,25 @@ void htFree(struct List* list[HASH_TABLE_SIZE]){
 
 int main(){
 	// void* p = (void*)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-	struct List* hashTable[HASH_TABLE_SIZE];
+	// printf("HASH_TABLE_SIZE: %i\n", HASH_TABLE_SIZE);
+	struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+	// printf("puntero hashTable 1: %lu\n", (long)hashTable);
+	if(hashTable == NULL){
+		perror("error en malloc de la hash table");
+		exit(-1);
+	}
+	// int i;
+	// for(i=0; i<HASH_TABLE_SIZE; i++){
+	// 	printf("init i%i\t%ld\n", i, (long)hashTable[i]);
+	// }
+	// printf("puntero hashTable 2: %lu\n", (long)hashTable);
 	htInit(hashTable);
+	// printf("puntero hashTable 3: %lu\n", (long)hashTable);
+	// for(i=0; i<HASH_TABLE_SIZE; i++){
+	// 	printf("init i%i\t%ld\n", i, (long)hashTable[i]);
+	// }
+
+
 	htLoad(hashTable);
 	// confirmar con htSearch
 	return 0;
