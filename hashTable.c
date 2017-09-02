@@ -1,56 +1,109 @@
 #include "linkedList.c"
+#include "atributes.c"
 
+// struct HashTable{
+// 	struct List* hashTable[HASH_TABLE_SIZE];
+// 	unsigned long size;
+// };
+//
+// // void htInit(void** p){
+// // 	struct List** hashTable = (struct List**)p;
+// void htInit(void* p){
+// 	struct HashTable* hashTable = p;
+// 	hashTable->size = 0;
+// 	hashTable->hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+// 	printf("capa %i\n", HASH_TABLE_SIZE);
+// 	printf("size %i\n", hashTable->size);
+// 	int i=0;
+// 	for(i=0; i<HASH_TABLE_SIZE; i++){
+// 		hashTable[i] = NULL;
+// 	}
+// }
 
-
-// TODO: change atribute to void* p
-void initHashTable(struct List* list[HASH_TABLE_SIZE]){
-	// struct List* list[HASH_TABLE_SIZE] = p;
+// void htInit(void** p){
+// 	struct List** hashTable = (struct List**)p;
+void htInit(struct List* hashTable[HASH_TABLE_SIZE]){
+	// hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+	printf("size %i\n", HASH_TABLE_SIZE);
 	int i=0;
 	for(i=0; i<HASH_TABLE_SIZE; i++){
-		list[i] = NULL;
+		hashTable[i] = NULL;
+		printf("%lu\n", hashTable[i]);
 	}
 }
+
 //	hash function char int idx
-int hashFunction(char* str){
+int htHashFunction(char* str){
 	int sum = 0;
 	int i=0;
 	for(i=0; i<NAME_SIZE; i++){
 		// printf("%c\n", str[i]);
 		if(str[i]=='\n')
 			break;
-		sum+=(int)str[i]*i*i;
-		sum%=HASH_TABLE_SIZE;
+		sum += (int)str[i]*(i+1);
+		// sum %= HASH_TABLE_SIZE;
 	}
 	return sum%HASH_TABLE_SIZE;
 }
-void loadHashTable(struct List* list[HASH_TABLE_SIZE]){
-	// struct List* list[HASH_TABLE_SIZE] = p;
+
+
+void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
-	long nStructures = ftell(dataDogs)/sizeof(struct dogType);
+	long numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
+	printf("number of structures: %ld\n", numberOfStructures);
 	rewind(dataDogs);
-	long i=0;
-	long id=0;
+
+	long filePointer=0;
 	int code=0;
-	for(i=0; i<nStructures; i++){
-		id = ftell(dataDogs);
+	int i=0;
+	for(i=0; i<numberOfStructures; i++){
+		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
-		code = hashFunction(currDog->name);
-		// printf("%s%i\n", currDog->name, code);
-		// printf("%i\n", (int)list[code]);
-		// printf("%ld\n", dll);
-		if(list[code] == NULL)
-			dllInit(list[code]);
-		dllAddBack(list[code], id);
+		// showDogType(currDog);
+		code = htHashFunction(currDog->name);
+		printf("nombre y su hash\t\t%s\t%i\n", currDog->name, code);
+
+		printf("puntero de hashtable en code\t%lu\n", (long)hashTable[code]);
+
+
+	  hashTable[code] = (struct List*)malloc(sizeof(struct List));
+		// if(hashTable[code] == NULL){
+		// 	dllInit(hashTable[code]);
+		// 	// dllAddHead(hashTable[code], filePointer);
+		// }
+		printf("puntero de hashtable en code\t%lu\n", (long)hashTable[code]);
+
+		// printf("\t%i\n", (int)filePointer);
+		// dllPrintAll(hashTable[code]);
+		// while(dllHasNext(hashTable)){
+		// }
+		// printf("\t\t%ld\n", dllGetCurrData(hashTable[code]));
+	// 	// printf("%ld\n", dll);
 	}
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	free(currDog);
 }
 
-void freeHashTable(struct List* list[HASH_TABLE_SIZE]){
+void htFree(struct List* list[HASH_TABLE_SIZE]){
   int i=0;
   for(i=0; i<HASH_TABLE_SIZE; i++){
     dllFree(list[i]);
   }
+}
+
+// htAdd (nombre, filePointer) ---> dllAddHead(filePointer)
+// htSearch/show
+// htDelete
+// htupdate = htLoad (furrFilePointer)
+
+int main(){
+	void* p = malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+	// void* p = (void*)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+	struct Lis1t* hashTable[HASH_TABLE_SIZE] = (struct List**)p;
+	// htInit(hashTable);
+	// htLoad(hashTable);
+	// confirmar con htSearch
+	return 0;
 }
