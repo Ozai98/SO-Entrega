@@ -13,7 +13,6 @@ void searchReg(struct List** hashTable);
 
 int main(){
 	struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-	// struct List* hashTable[HASH_TABLE_SIZE]
 	htInit(hashTable);
 	htLoad(hashTable);
 	menu(hashTable);
@@ -266,15 +265,24 @@ void deleteReg(struct List** hashTable){
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
 void searchReg(struct List** hashTable){
 	char petName[NAME_SIZE];
-  printf("%s\n", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32");
-	fgets(petName, 32, stdin);
-	// scanf("%32s[^\n]", petName);
-  printf("%s\n", petName);
-	dllPrintAll(hashTable[htHashFunction(petName)]);
+	int i=0;
+	for(i=0; i<NAME_SIZE; i++)
+		petName[i] = 1;
+  printf("Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32: ");
+	getchar();
+	fgets(petName, NAME_SIZE, stdin);
+	petName[strlen(petName)-1]=0;
+  // printf("%s\n", petName);
+	int code = htHashFunction(petName);
+	printf("%i\n", code);
+	// printf("Code: %i,\nLista: %lu\n", code, (long)hashTable[code]);
+	dllPrintAll(hashTable[code]);
   htSearch(hashTable,petName);
 	printf("%s", "Busqueda exitosa, presione enter para continuar");
 	char newLine;
-	fflush(stdin);
-	scanf(" %c", &newLine);
-		menu(hashTable);
+	// fflush(stdin);
+	getchar();
+	getchar();
+	// scanf(" %c", &newLine);
+	menu(hashTable);
 }
