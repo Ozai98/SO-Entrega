@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include<ctype.h>
 // Size constants
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
@@ -14,6 +14,7 @@
 #define PET_NAMES_PATH "petNames.dat"
 #define DATA_DOGS_PATH "dataDogs.dat"
 #define CURRENT_ID_PATH "currentId.dat"
+#define TEMP_DATA_DOGS_PATH "tempDataDogs.dat"
 
 // Struct declaration
 struct dogType{

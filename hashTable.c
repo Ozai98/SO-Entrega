@@ -15,7 +15,7 @@ int htHashFunction(char* str){
 		// printf("%c\n", str[i]);
 		if(str[i]==0)
 			break;
-		sum += (int)str[i]*(i+1);
+		sum += tolower(str[i])*(i+1);
 		// sum %= HASH_TABLE_SIZE;
 	}
 	return sum%HASH_TABLE_SIZE;
@@ -40,9 +40,9 @@ void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 		if(hashTable[code] == NULL){
 			hashTable[code] = (struct List*)malloc(sizeof(struct List));
 			dllInit(hashTable[code]);
+			printf("Code: %i id: %i Pointer: %ld Name: %s \n", code, currDog->id, (long)filePointer, currDog->name);
 		}
 		dllAddHead(hashTable[code], filePointer);
-		printf("Code:%i Pointer: %ld Name: %s\n", code, (long)filePointer, currDog->name);
 	}
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	free(currDog);
@@ -64,33 +64,48 @@ void htFree(struct List* hashTable[HASH_TABLE_SIZE]){
 }
 
 void htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
+	int i = 0;
 	int code;
+	int quit = 0;
 	code = htHashFunction(name);
-	if(hashTable[code] == NULL || dllIsEmpty(hashTable[code]))
+	if(hashTable[code] == NULL)
+		printf("%s\n","Mascota no existe");
+	else if(dllIsEmpty(hashTable[code]) == 1)
 		printf("%s\n","Mascota no existe");
 	else{
 		FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 		struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
 		dllRewind(hashTable[code]);
-		fseek(dataDogs, dllGetCurrData(hashTable[code]), SEEK_SET);
-		fread(newDog, sizeof(struct dogType), 1, dataDogs);
-		if(!strcmp(newDog->name, name))
-			showDogType(newDog);
-		else
-			showDogType(newDog);
+		char* dogNameAux;
+		char* nameAux;
+		strcpy(dogNameAux, newDog->name);
+		strcpy(nameAux, name);
+		for(i = 0; i< (int)strlen(dogNameAux); i++){
+  		dogNameAux[i] = tolower(dogNameAux[i]);
+		}
+		for(i = 0; i<(int)strlen(nameAux); i++){
+  		nameAux[i] = tolower(nameAux[i]);
+		}
+		printf("Data del curr%ld\n", dllGetCurrData(hashTable[code]));
 		while(dllHasNext(hashTable[code])){
+			printf("Data del curr%ld\n", dllGetCurrData(hashTable[code]));
+
+			printf("dogName %s\t%s\n", newDog->name, name);
 			fseek(dataDogs, dllGetCurrData(hashTable[code]), SEEK_SET);
 			fread(newDog, sizeof(struct dogType), 1, dataDogs);
-			if(!strcmp(newDog->name, name)){
+			printf("dogNameAux %s\t%s\n", dogNameAux, nameAux);
+			if(!strcmp(dogNameAux, nameAux))
 				showDogType(newDog);
-			}
 			dllNext(hashTable[code]);
 		}
+		fseek(dataDogs, dllGetCurrData(hashTable[code]), SEEK_SET);
+		fread(newDog, sizeof(struct dogType), 1, dataDogs);
+		printf("dogNameAux %s\t%s\n", dogNameAux, nameAux);
+		if(!strcmp(dogNameAux, nameAux))
+			showDogType(newDog);
 		free(newDog);
 		checkfclose(dataDogs, DATA_DOGS_PATH);
 	}
-
-
 }
 
 void htAdd(struct List* hashTable[HASH_TABLE_SIZE], char* name, long pos){
