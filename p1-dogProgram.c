@@ -204,16 +204,17 @@ void seeReg(struct List** hashTable){
 			scanf(" %c", &ans);
 			if(ans == 's' || ans == 'S'){
 				char* file_name_1 = "Historia clínica de ";
-				char file_name_2 [10];
+
 				sprintf(file_name_2, "%d", numberReg);
-				int length = strlen(file_name_1) + strlen(file_name_2) + 1;
-				char* new_arr = malloc(length);
-				strcpy(new_arr, file_name_1);
-				strcat(new_arr, file_name_2);
-				if(!fork()){
-   				execlp("gedit", "gedit", new_arr, NULL);
-					printf("%s\n", "Creacion/consulta de historia clinica exitosa");
-				}
+				// char file_name_2 [10];
+				// int length = strlen(file_name_1) + strlen(file_name_2) + 1;
+				// char* new_arr = malloc(length);
+				// strcpy(new_arr, file_name_1);
+				// strcat(new_arr, file_name_2);
+				// if(!fork()){
+   		// 		execlp("gedit", "gedit", new_arr, NULL);
+				// 	printf("%s\n", "Creacion/consulta de historia clinica exitosa");
+				// }
 				char newLine;
 				scanf("%c", &newLine);
 					menu(hashTable);
