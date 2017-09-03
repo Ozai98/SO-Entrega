@@ -205,8 +205,8 @@ void seeReg(struct List** hashTable){
 			if(ans == 's' || ans == 'S'){
 				char file_name_2[12];
 
-
-				sprintf(file_name_2, "gedit %d.txt", numberReg);
+				int potato = numberReg+1;
+				sprintf(file_name_2, "gedit %d.txt", potato);
 				//strcat(file_name_2, ".txt");
 				system(file_name_2);
 
