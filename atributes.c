@@ -1,18 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include<ctype.h>
 // Size constants
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
 #define BREED_SIZE 16
-#define STRUCTURES_NUMBER 1e+7
+// #define STRUCTURES_NUMBER 1e+7
+#define STRUCTURES_NUMBER 200
 #define HASH_TABLE_SIZE 2500
 
 #define NOMBRES_MASCOTAS_PATH "nombresMascotas.txt"
 #define PET_NAMES_PATH "petNames.dat"
 #define DATA_DOGS_PATH "dataDogs.dat"
 #define CURRENT_ID_PATH "currentId.dat"
+#define TEMP_DATA_DOGS_PATH "tempDataDogs.dat"
 
 // Struct declaration
 struct dogType{
@@ -31,8 +33,8 @@ void showDogType(void *p){
   printf("Id:\t%u\n",dog->id);
   printf("Nombre:\t%s\n",dog->name);
   printf("Tipo:\t%s\n",dog->type);
-	printf("Edad:\t%hu\n",dog->age);
   printf("Raza:\t%s\n",dog->breed);
+	printf("Edad:\t%hu\n",dog->age);
 	printf("Altura:\t%hu\n",dog->height);
   printf("Peso:\t%2.2f\n",dog->weight);
 	printf("Genero:\t%c\n",dog->gender);

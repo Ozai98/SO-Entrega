@@ -29,6 +29,8 @@ int main(){
   for(i=0; i<STRUCTURES_NUMBER; i++, id++){
     newDog->id = id;
     strcpy(newDog->name, getRandomName(fPetNames));
+    // printf("%i\n", (int)strlen(newDog->name));
+
     int typeIdx = rand()%4;
     int breedIdx = rand()%3;
     strcpy(newDog->type, type[typeIdx]);
@@ -58,6 +60,7 @@ void txttoDat(){
   FILE* fPetNames = checkfopen(PET_NAMES_PATH, "w");
   char name[NAME_SIZE];
   while(fgets(name,NAME_SIZE,fNombresMascotas)){
+    name[strlen(name)-1]=0;
     fwrite(name, NAME_SIZE, 1, fPetNames);
   }
   checkfclose(fPetNames, PET_NAMES_PATH);
