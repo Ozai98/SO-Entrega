@@ -203,9 +203,13 @@ void seeReg(struct List** hashTable){
 			printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
 			scanf(" %c", &ans);
 			if(ans == 's' || ans == 'S'){
-				char* file_name_1 = "Historia clínica de ";
+				char file_name_2[12];
 
-				sprintf(file_name_2, "%d", numberReg);
+
+				sprintf(file_name_2, "gedit %d.txt", numberReg);
+				//strcat(file_name_2, ".txt");
+				system(file_name_2);
+
 				// char file_name_2 [10];
 				// int length = strlen(file_name_1) + strlen(file_name_2) + 1;
 				// char* new_arr = malloc(length);
