@@ -12,15 +12,12 @@ int htHashFunction(char* str){
 	int sum = 0;
 	int i=0;
 	for(i=0; i<NAME_SIZE; i++){
-		// printf("%c\n", str[i]);
 		if(str[i] == 0)
 			break;
 		sum += tolower(str[i])*(i+1);
-		// sum %= HASH_TABLE_SIZE;
 	}
 	return sum%HASH_TABLE_SIZE;
 }
-
 
 void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 	long filePointer = 0;
@@ -30,7 +27,6 @@ void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
 	long numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
-	printf("number of structures: %ld\n", numberOfStructures);
 	rewind(dataDogs);
 
 	for(i; i<numberOfStructures; i++){
@@ -41,7 +37,6 @@ void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 			hashTable[code] = (struct List*)malloc(sizeof(struct List));
 			dllInit(hashTable[code]);
 		}
-		printf("Code: %i id: %i Pointer: %ld Pos: %lu Name: %s \n", code, currDog->id, (long)filePointer, filePointer/sizeof(struct dogType), currDog->name);
 		dllAddHead(hashTable[code], filePointer);
 	}
 	checkfclose(dataDogs, DATA_DOGS_PATH);
@@ -59,18 +54,18 @@ void htPrintAll(struct List* hashTable[HASH_TABLE_SIZE]){
 void htFree(struct List* hashTable[HASH_TABLE_SIZE]){
   int i;
   for(i=0; i<HASH_TABLE_SIZE; i++){
-    dllFree(hashTable[i]);
+		if(hashTable[i] = NULL)
+    	dllFree(hashTable[i]);
   }
+	free(hashTable);
 }
 
-void htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
+int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
+	int success = 0;
 	int i = 0;
-	int code;
 	int quit = 0;
+	int code;
 	code = htHashFunction(name);
-	// printf("%lu\n", (long)hashTable[code]);
-	// printf("%i\n", dllIsEmpty(hashTable[code]));
-
 
 	if(hashTable[code] == NULL)
 		printf("%s\n","Mascota no existe");
@@ -82,6 +77,7 @@ void htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 		char dogNameAux[NAME_SIZE];
 		char nameAux[NAME_SIZE];
 		strcpy(nameAux, name);
+
 		for(i = 0; nameAux[i]!=0; i++){
 			nameAux[i] = tolower(nameAux[i]);
 		}
@@ -89,24 +85,31 @@ void htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 			fseek(dataDogs, dllGetCurrData(hashTable[code]), SEEK_SET);
 			fread(newDog, sizeof(struct dogType), 1, dataDogs);
 			strcpy(dogNameAux, newDog->name);
+
 			for(i = 0; dogNameAux[i]!=0; i++){
 				dogNameAux[i] = tolower(dogNameAux[i]);
 			}
-			if(!strcmp(dogNameAux, nameAux))
+			if(!strcmp(dogNameAux, nameAux)){
 				showDogType(newDog);
+				success = 1;
+			}
 			dllNext(hashTable[code]);
 		}
 		fseek(dataDogs, dllGetCurrData(hashTable[code]), SEEK_SET);
 		fread(newDog, sizeof(struct dogType), 1, dataDogs);
 		strcpy(dogNameAux, newDog->name);
+
 		for(i = 0; dogNameAux[i]!=0; i++){
 			dogNameAux[i] = tolower(dogNameAux[i]);
 		}
-		if(!strcmp(dogNameAux, nameAux))
+		if(!strcmp(dogNameAux, nameAux)){
 			showDogType(newDog);
+			success = 1;
+		}
 		free(newDog);
 		checkfclose(dataDogs, DATA_DOGS_PATH);
 	}
+	return success;
 }
 
 void htAdd(struct List* hashTable[HASH_TABLE_SIZE], char* name, long pos){

@@ -6,6 +6,7 @@
 
 //Declaración de las funciones
 void menu(struct List** hashTable);
+void exeMenu(struct List** hashTable);
 void addReg(struct List** hashTable);
 void seeReg(struct List** hashTable);
 void deleteReg(struct List** hashTable);
@@ -16,6 +17,8 @@ int main(){
 	htInit(hashTable);
 	htLoad(hashTable);
 	menu(hashTable);
+	htFree(hashTable);
+	return 0;
 }
 
 
@@ -71,6 +74,11 @@ void menu(struct List** hashTable){
 			break;
 	}
 }
+//Función que reejecuta el menú
+void exeMenu(struct List** hashTable){
+	getchar();
+	menu(hashTable);
+}
 // Función que añade un registro a al archivo
 void addReg(struct List** hashTable){
 	char term;
@@ -88,19 +96,23 @@ void addReg(struct List** hashTable){
 	//Captura de los datos de la mascota
 
 	//check else in get string cycles
-	printf("%s\n", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres,\nsi lo hace solo se guardaran los primeros 32");
-	scanf("%32s", petName);
+	printf("%s", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres,\nsi lo hace solo se guardaran los primeros 32: ");
+	getchar();
+	fgets(petName, NAME_SIZE, stdin);
+	petName[strlen(petName)-1]=0;
 	printf("Nombre ingresado: %s\n", petName);
 
-	printf("%s\n", "Ingrese el tipo de la mascota, este no debe superar los 32 caracteres \nsi lo hace solo se guardaran los primeros 32");
-	scanf("%32s", type);
+	printf("%s", "Ingrese el tipo de la mascota, este no debe superar los 32 caracteres \nsi lo hace solo se guardaran los primeros 32: ");
+	fgets(type, NAME_SIZE, stdin);
+	type[strlen(type)-1]=0;
 	printf("Tipo ingresado: %s\n", type);
 
-	printf("%s\n","Ingrese la raza de la mascota, este no debe superar los 32 caracteres, \nsi lo hace solo se guardaran los primeros 32" );
-	scanf("%32s", breed);
+	printf("%s","Ingrese la raza de la mascota, este no debe superar los 32 caracteres, \nsi lo hace solo se guardaran los primeros 32: ");
+	fgets(breed, NAME_SIZE, stdin);
+	breed[strlen(breed)-1]=0;
 	printf("Raza ingresada: %s\n", breed);
-
-	printf("%s\n", "Ingrese el sexo 'H' para Hembra o 'M' para Macho");
+	printf("%s", "Ingrese el sexo 'H' para Hembra o 'M' para Macho: ");
+	fflush(stdin);
 	scanf(" %c", &sex);
 	while(sex != 'H' && sex != 'M' && sex != 'm' && sex != 'h'){
 		printf("%s\n", "Ingrese el sexo 'H' o 'M'");
@@ -108,7 +120,7 @@ void addReg(struct List** hashTable){
 	}
 	printf("Sexo ingresado: %c\n", sex);
 
-	printf("Ingrese la edad de la mascota");
+	printf("Ingrese la edad de la mascota: ");
 	do{
 		getchar();
 		if(scanf("%d%c", &age, &term) != 2 || term != '\n')
@@ -118,21 +130,21 @@ void addReg(struct List** hashTable){
 	}while(rightValue == 0);
 	printf("La edad introducida es: %d\n", age);
 
-	printf("Ingrese la altura de la mascota");
+	printf("Ingrese la altura de la mascota (En cm): ");
 	rightValue = 0;
 	do{
 		if(scanf(" %d%c", &height, &term) != 2 || term != '\n')
-				printf("Valor no valido, intente de nuevo: ");
+				printf("Valor no valido, intente de nuevo. ");
 		else
 			rightValue = 1;
 	}while(rightValue == 0);
 	printf("La altura introducida es: %d\n", height);
 
-	printf("Ingrese el peso de la mascota");
+	printf("Ingrese el peso de la mascota (En kg): ");
 	rightValue = 0;
 	do{
 		if(scanf(" %f%c", &weight, &term) != 2 || term != '\n')
-		    printf("Valor no valido, intente de nuevo: ");
+		    printf("Valor no valido, intente de nuevo. ");
 		else
 			rightValue = 1;
 	}while(rightValue == 0);
@@ -145,7 +157,6 @@ void addReg(struct List** hashTable){
 	FILE* fptc = checkfopen(CURRENT_ID_PATH, "r+");
 	unsigned long id;
 	fread(&id, sizeof(long), 1, fptc);
-	printf("%lu\n", id);
 	id += 1;
 	newDog->id = id;
 	rewind(fptc);
@@ -167,13 +178,9 @@ void addReg(struct List** hashTable){
 	fwrite(newDog, sizeof(struct dogType), 1, fptr);
 	free(newDog);
 	checkfclose(fptr, DATA_DOGS_PATH);
-
 	printf("Registro añadido exitosamente. Presione enter para continuar");
-	char newLine;
-	scanf("%c", &newLine);
-		menu(hashTable);
+	exeMenu(hashTable);
 }
-
 //	Función que permite ver un registro de dataDogs.dat
 void seeReg(struct List** hashTable){
 	int numberReg;
@@ -188,9 +195,9 @@ void seeReg(struct List** hashTable){
 		printf("%s\n", "Ingrese el número del registro a consultar");
 		scanf("%d", &numberReg);
 		numberReg-= 1;
-		if(numberReg < 0 || numberReg >= totalSize){
+		if(numberReg < 0 || numberReg >= totalSize)
 			printf("%s\n", "Este registro no existe");
-		}else{
+		else{
 			value = 1;
 			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
 			fseek(fptr, numberReg*sizeof(struct dogType), SEEK_SET);
@@ -204,52 +211,56 @@ void seeReg(struct List** hashTable){
 			scanf(" %c", &ans);
 			if(ans == 's' || ans == 'S'){
 				char file_name_2[12];
-
 				int potato = numberReg+1;
+
 				sprintf(file_name_2, "gedit %d.txt", potato);
 				system(file_name_2);
-				char newLine;
-				scanf("%c", &newLine);
-					menu(hashTable);
-
+				printf("%s\n", "Presione enter para continuar");
+					getchar();
+					exeMenu(hashTable);
 			}else{
-				char newLine;
-				scanf("%c", &newLine);
-					menu(hashTable);
+				printf("%s\n", "Presione enter para continuar");
+				exeMenu(hashTable);
 			}
-
 		}
 	}while (value == 0);
 }
-
 //	Función que elimina un registro de datadogs.dat
 void deleteReg(struct List** hashTable){
 	int i = 0;
 	long filePointer = 0;
 	int code = 0;
 	int delReg = 0;
+
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
+
 	printf("%s\n", "Ingrese el id del registro a eliminar");
 	scanf("%i", &delReg);
 	delReg-=1;
 	fseek(dataDogs, 0, SEEK_END);
 	long numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
-	printf("number of structures: %ld\n", numberOfStructures);
 	rewind(dataDogs);
 	for(i; i<numberOfStructures; i++){
 		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
 		if(filePointer == delReg*sizeof(struct dogType)){
-			fseek(dataDogs, sizeof(struct dogType), SEEK_CUR);
+				printf("%s\n", "Esto sirve8");
 			code = htHashFunction(currDog->name);
 			dllRewind(hashTable[code]);
+
 			while(dllHasNext(hashTable[code])){
 				if(dllGetCurrData(hashTable[code]) == filePointer){
 					dllDeleteCurr(hashTable[code]);
+					printf("%s\n", "Entro aqui! :D");
 					break;
 				}
+				dllNext(hashTable[code]);
+			}
+			if(dllGetCurrData(hashTable[code]) == filePointer){
+				dllDeleteCurr(hashTable[code]);
+				printf("%s\n", "Entro aqui! :O");
 			}
 			continue;
 		}
@@ -260,8 +271,10 @@ void deleteReg(struct List** hashTable){
 	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
 	remove(DATA_DOGS_PATH);
 	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
+	printf("%s\n", "Eliminación exitosa, presione enter para continuar");
+	getchar();
+	exeMenu(hashTable);
 }
-
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
 void searchReg(struct List** hashTable){
 	char petName[NAME_SIZE];
@@ -272,17 +285,12 @@ void searchReg(struct List** hashTable){
 	getchar();
 	fgets(petName, NAME_SIZE, stdin);
 	petName[strlen(petName)-1]=0;
-  // printf("%s\n", petName);
 	int code = htHashFunction(petName);
-	printf("%i\n", code);
-	// printf("Code: %i,\nLista: %lu\n", code, (long)hashTable[code]);
-	dllPrintAll(hashTable[code]);
-  htSearch(hashTable,petName);
-	printf("%s", "Busqueda exitosa, presione enter para continuar");
-	char newLine;
-	// fflush(stdin);
-	getchar();
-	getchar();
-	// scanf(" %c", &newLine);
-	menu(hashTable);
+	if(htSearch(hashTable,petName)){
+		printf("%s", "Busqueda exitosa, presione enter para continuar");
+		exeMenu(hashTable);
+	}else{
+		printf("%s", "Este registro no existe, presione enter para continuar");
+		exeMenu(hashTable);
+	}
 }

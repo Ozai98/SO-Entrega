@@ -110,7 +110,6 @@ long dllDeleteCurr(void* p){
 //  Imprime el dato de cada uno de los nodos de la estructura
 void dllPrintAll(void* p){
   struct List* list = p;
-  printf("list size: %i\n", list->size);
   struct Node* currNode = list->head;
   if(!dllIsEmpty(list)){
     while(currNode->next != NULL){
