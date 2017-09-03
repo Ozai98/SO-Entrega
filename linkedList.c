@@ -22,7 +22,10 @@ void dllInit(void* p){
 // Verifica si la estructura está vacía
 int dllIsEmpty(void* p){
   struct List* list = p;
-  return list->head == NULL;
+  if(list->head == NULL){
+    return 1;
+  }
+  return 0;
 }
 //  Rebobina la estructura
 void dllRewind(void* p){

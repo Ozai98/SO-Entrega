@@ -1,25 +1,27 @@
 #include <unistd.h>
-#include "atributes.c"
 #include "hashTable.c"
 #include <ctype.h>
 
+
+
 //Declaración de las funciones
-void menu();
-void addReg();
-void seeReg();
-void deleteReg();
-void searchReg();
+void menu(struct List** hashTable);
+void addReg(struct List** hashTable);
+void seeReg(struct List** hashTable);
+void deleteReg(struct List** hashTable);
+void searchReg(struct List** hashTable);
 
 int main(){
-	struct List* hashTable[HASH_TABLE_SIZE];
-	//initHashTable(hashTable);
-	//loadHashTable(hashTable);
-	menu();
-//  freeHashTable(hashTable);
+	struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+	// struct List* hashTable[HASH_TABLE_SIZE]
+	htInit(hashTable);
+	htLoad(hashTable);
+	menu(hashTable);
 }
 
+
 // Menú que despliega las opciones
-void menu(){
+void menu(struct List** hashTable){
 	char input[32];
 	int num = 0;
 	printf("--------------------------------------------------\n");
@@ -47,19 +49,19 @@ void menu(){
 	switch(num){
 		case 1:
 			printf("Ingresar registro\n");
-			addReg();
+			addReg(hashTable);
 			break;
 		case 2:
 			printf("Ver registro\n");
-			seeReg();
+			seeReg(hashTable);
 			break;
 		case 3:
 			printf("Borrar registro\n");
-			deleteReg();
+			deleteReg(hashTable);
 			break;
 		case 4:
 			printf("Buscar registro\n");
-			searchReg();
+			searchReg(hashTable);
 			break;
 		case 5:
 			printf("Salir\n");
@@ -70,7 +72,7 @@ void menu(){
 	}
 }
 // Función que añade un registro a al archivo
-void addReg(){
+void addReg(struct List** hashTable){
 	char term;
 	int numberRight = 0;
 	char petName[NAME_SIZE];
@@ -157,109 +159,91 @@ void addReg(){
 	newDog->weight = weight;
 	newDog->gender = sex;
 	showDogType(newDog);
-	free(newDog);
 
-	// fseek(fptr, 0, SEEK_END);
-  // long data = ftell(fptr);
-  // int code = hashFunction(newDog->name);
-  // printf("%s%i\n", "hashTable[code]->head->next: ", (int)hashTable[code]->head->next);
-  // // if(hashTable[code]->head->next == NULL){
-  //   // dllInit(hashTable[code]);
-  // // }
-  // dllAddBack(hashTable[code], data);
-	// int num = fwrite(newDog, sizeof(struct dogType), 1, fptr);
-	// checkfclose(fptr, DATA_DOGS_PATH);
-	// printf("%d",num);
-	// printf("Registro añadido exitosamente. Presione enter para continuar");
-	// char newLine;
-	// scanf("%c", &newLine);
-	// // if (newLine == '\n')
-	// 	menu(hashTable);
+	fseek(fptr, 0, SEEK_END);
+  long data = ftell(fptr);
+	htAdd(hashTable, newDog->name, data);
+
+	fwrite(newDog, sizeof(struct dogType), 1, fptr);
+	free(newDog);
+	checkfclose(fptr, DATA_DOGS_PATH);
+
+	printf("Registro añadido exitosamente. Presione enter para continuar");
+	char newLine;
+	scanf("%c", &newLine);
+		menu(hashTable);
 }
 
 //	Función que permite ver un registro de dataDogs.dat
-void seeReg(){
-	// int numberReg;
-	// int value = 0;
-	// long totalSize;
-	// char ans;
-	// FILE* fptr = checkfopen(DATA_DOGS_PATH, "r");
-	// fseek(fptr, 0, SEEK_END);
-	// totalSize = ftell(fptr) / (sizeof(struct dogType));
-	// printf("El número de registros es de: %ld\n",totalSize);
-	// do{
-	// 	printf("%s\n", "Ingrese el número del registro a consultar");
-	// 	scanf("%d", &numberReg);
-	// 	numberReg-= 1;
-	// 	if(numberReg < 0 || numberReg >= totalSize){
-	// 		printf("%s\n", "Este registro no existe");
-	// 	}else{
-	// 		value = 1;
-	// 		struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
-	// 		fseek(fptr, numberReg*sizeof(struct dogType), SEEK_SET);
-	// 		fread(newDog, sizeof(struct dogType), 1, fptr);
-	// 		showDogType(newDog);
-  //     free(newDog);
-  //     checkfclose(fptr, DATA_DOGS_PATH);
-	// 		printf("Consulta de registro exitosa\n");
-	// 		char* file_name_1 = "Historia clínica de ";
-	// 		char file_name_2 [10];
-	// 		sprintf(file_name_2, "%d", numberReg);
-	// 		int length = strlen(file_name_1) + strlen(file_name_2) + 1;
-	// 		char* new_arr = malloc(length);
-	// 		strcpy(new_arr, file_name_1);
-	// 		strcat(new_arr, file_name_2);
-	//
-	// 		printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
-	// 		scanf(" %c", &ans);
-	// 		if(ans == 's' || ans == 'S'){
-	// 			if(!fork()){
-  //  				execlp("gedit", "gedit", new_arr, NULL);
-	// 				printf("%s\n", "Creacion/consulta de historia clinica exitosa");
-	// 				char newLine;
-	// 				scanf("%c", &newLine);
-	// 				if (newLine == '\n'){
-	// 					menu(hashTable);
-  //         }
-	// 			}
-	// 		}else{
-	// 			menu(hashTable);
-	// 		}
-	// 	}
-	// }while (value == 0);
+void seeReg(struct List** hashTable){
+	int numberReg;
+	int value = 0;
+	long totalSize;
+	char ans;
+	FILE* fptr = checkfopen(DATA_DOGS_PATH, "r");
+	fseek(fptr, 0, SEEK_END);
+	totalSize = ftell(fptr) / (sizeof(struct dogType));
+	printf("El número de registros es de: %ld\n",totalSize);
+	do{
+		printf("%s\n", "Ingrese el número del registro a consultar");
+		scanf("%d", &numberReg);
+		numberReg-= 1;
+		if(numberReg < 0 || numberReg >= totalSize){
+			printf("%s\n", "Este registro no existe");
+		}else{
+			value = 1;
+			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
+			fseek(fptr, numberReg*sizeof(struct dogType), SEEK_SET);
+			fread(newDog, sizeof(struct dogType), 1, fptr);
+			showDogType(newDog);
+      free(newDog);
+      checkfclose(fptr, DATA_DOGS_PATH);
+			printf("Consulta de registro exitosa\n");
+
+			printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
+			scanf(" %c", &ans);
+			if(ans == 's' || ans == 'S'){
+				char* file_name_1 = "Historia clínica de ";
+				char file_name_2 [10];
+				sprintf(file_name_2, "%d", numberReg);
+				int length = strlen(file_name_1) + strlen(file_name_2) + 1;
+				char* new_arr = malloc(length);
+				strcpy(new_arr, file_name_1);
+				strcat(new_arr, file_name_2);
+				if(!fork()){
+   				execlp("gedit", "gedit", new_arr, NULL);
+					printf("%s\n", "Creacion/consulta de historia clinica exitosa");
+				}
+				char newLine;
+				scanf("%c", &newLine);
+					menu(hashTable);
+
+			}else{
+				char newLine;
+				scanf("%c", &newLine);
+					menu(hashTable);
+					menu(hashTable);
+			}
+
+		}
+	}while (value == 0);
 }
 
 //	Función que elimina un registro de datadogs.dat
-void deleteReg(){
+void deleteReg(struct List** hashTable){
 
 }
 
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
-void searchReg(){
-	// char petName[NAME_SIZE];
-  // printf("%s\n", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32");
-  // scanf("%32s", petName);
-  // printf("%s\n", petName);
-  // int a=0;
-  // printf("%s", "numero: ");
-  // scanf("%i\n", &a);
-  // printf("%i\n", a);
-  // FILE* dataDogs = checkfopen("archivo.txt", "w");
-  // struct dogType* myDog = (struct dogType*)malloc(sizeof(struct dogType));
-  // struct List* myList = (struct List*)malloc(sizeof(struct List));
-  // myList = hashTable[hashFunction("Stitch")];
-  // dllRewind(myList);
-  // long pos=0;
-  // while(dllHasNext(myList)){
-  //   pos=dllNext(myList);
-  //   fseek(dataDogs, pos, SEEK_SET);
-  //   fread(myDog, sizeof(struct dogType), 1, dataDogs);
-  //   if(strcmp(myDog->name, "Stitch")==0){
-  //     showDogType(myDog);
-  //     break;
-  //   }
-  // };
-  // free(myList);
-  // free(myDog);
-  // checkfclose(dataDogs, "archivo.txt");
+void searchReg(struct List** hashTable){
+	char petName[NAME_SIZE];
+  printf("%s\n", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32");
+  scanf("%32s", petName);
+  printf("%s\n", petName);
+	dllPrintAll(hashTable[htHashFunction(petName)]);
+  htSearch(hashTable,petName);
+	printf("%s\n", "Busqueda exitosa, presione enter para continuar");
+	char* loquesea;
+	scanf("%s\n", loquesea);
+	menu(hashTable);
 }
