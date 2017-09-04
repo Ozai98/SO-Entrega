@@ -90,7 +90,9 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 				dogNameAux[i] = tolower(dogNameAux[i]);
 			}
 			if(!strcmp(dogNameAux, nameAux)){
-				showDogType(newDog);
+				if(success==0)
+					showDogTypeTableHead();
+				showDogTypeTable(newDog);
 				success = 1;
 			}
 			dllNext(hashTable[code]);
@@ -103,7 +105,9 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 			dogNameAux[i] = tolower(dogNameAux[i]);
 		}
 		if(!strcmp(dogNameAux, nameAux)){
-			showDogType(newDog);
+			if(success==0)
+				showDogTypeTableHead();
+			showDogTypeTable(newDog);
 			success = 1;
 		}
 		free(newDog);

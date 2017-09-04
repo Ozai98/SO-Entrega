@@ -288,9 +288,8 @@ void searchReg(struct List** hashTable){
 	int code = htHashFunction(petName);
 	if(htSearch(hashTable,petName)){
 		printf("%s", "Busqueda exitosa, presione enter para continuar");
-		exeMenu(hashTable);
 	}else{
 		printf("%s", "Este registro no existe, presione enter para continuar");
-		exeMenu(hashTable);
 	}
+	exeMenu(hashTable);
 }
