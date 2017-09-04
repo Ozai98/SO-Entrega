@@ -1,13 +1,13 @@
 #include "linkedList.c"
 #include "atributes.c"
-
+//Inicializa la hashTable
 void htInit(struct List* hashTable[HASH_TABLE_SIZE]){
 	int i=0;
 	for(i; i<HASH_TABLE_SIZE; i++){
 		hashTable[i] = NULL;
 	}
 }
-
+//Le calcula la función hash a str
 int htHashFunction(char* str){
 	int sum = 0;
 	int i=0;
@@ -18,7 +18,7 @@ int htHashFunction(char* str){
 	}
 	return sum%HASH_TABLE_SIZE;
 }
-
+//Carga la hashTable con los registros de dataDogs.dat
 void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 	long filePointer = 0;
 	int code = 0;
@@ -42,7 +42,7 @@ void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	free(currDog);
 }
-
+//Imprime todos los valores de la hashTable
 void htPrintAll(struct List* hashTable[HASH_TABLE_SIZE]){
 	int i = 0;
 	for(i; i < HASH_TABLE_SIZE; i++){
@@ -50,7 +50,7 @@ void htPrintAll(struct List* hashTable[HASH_TABLE_SIZE]){
 			dllPrintAll(hashTable[i]);
 	}
 }
-
+//Libera el espacio de memoria ocupado por la hashTable
 void htFree(struct List* hashTable[HASH_TABLE_SIZE]){
   int i;
   for(i=0; i<HASH_TABLE_SIZE; i++){
@@ -59,7 +59,7 @@ void htFree(struct List* hashTable[HASH_TABLE_SIZE]){
   }
 	free(hashTable);
 }
-
+//Busca un valor en la hashTable
 int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 	int success = 0;
 	int i = 0;
@@ -115,7 +115,7 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 	}
 	return success;
 }
-
+//Añade un valor a la hashTable
 void htAdd(struct List* hashTable[HASH_TABLE_SIZE], char* name, long pos){
 	int code;
 	code = htHashFunction(name);
@@ -125,18 +125,3 @@ void htAdd(struct List* hashTable[HASH_TABLE_SIZE], char* name, long pos){
 	}
 	dllAddHead(hashTable[code], pos);
 }
-
-// int main(){
-// 	struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-// 	htInit(hashTable);
-// 	htPrintAll(hashTable);
-// 	htLoad(hashTable);
-// 	htPrintAll(hashTable);
-// 	htAdd(hashTable,"Tysson",120);
-// 	htPrintAll(hashTable);
-// 	htSearch(hashTable, "Tysson");
-// 	//htSearch(hashTable,"Banana");
-// 	//htFree(hashTable);
-// 	// confirmar con htSearch
-// 	return 0;
-// }

@@ -60,7 +60,7 @@ long dllGetCurrData(void* p){
   perror("Error getCurrData of NULL");
   exit(-1);
 }
-//  Asigna el dato l nodo actual
+//  Asigna el dato al nodo actual
 void dllSetCurrData(void* p, long data){
   struct List* list = p;
   if(list->curr != NULL)
@@ -119,7 +119,7 @@ void dllPrintAll(void* p){
     printf("%ld\n", currNode->data);
   }
 }
-//  Libera cada uno de los nodos de la estructura y la estructura misma
+//  Libera la memoria asignada a cada uno de los nodos de la estructura y la estructura misma
 void dllFree(void* p){
   struct List* list = p;
   struct Node* currNode = list->head;

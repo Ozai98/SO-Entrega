@@ -6,11 +6,10 @@ void txttoDat();
 char* getRandomName(void* p);
 
 int main(){
-  // TODO: Podemos dejar el nombresMascotas.txt original, pues podemos con los campos vacios y creo que podemos con las tildes y caracteres raros
   // generar .dat
   txttoDat();
 
-  // TODO: Create more types and breeds
+  // TODO: Crear mas tipos y razas
   char* type[4]={"Perro","Gato","Roedor","Reptiles"};
   char* breed[4][3] = {
     {"Pastor Alemán","Labrador","Chihuahua"},
@@ -29,8 +28,6 @@ int main(){
   for(i=0; i<STRUCTURES_NUMBER; i++, id++){
     newDog->id = id;
     strcpy(newDog->name, getRandomName(fPetNames));
-    // printf("%i\n", (int)strlen(newDog->name));
-
     int typeIdx = rand()%4;
     int breedIdx = rand()%3;
     strcpy(newDog->type, type[typeIdx]);
@@ -39,14 +36,12 @@ int main(){
     newDog->height = rand()%100;
     newDog->weight = (rand()%5000)/100.0;
     newDog->gender = gender[rand()%2];
-    // showDogType(newDog);
     fwrite(newDog, sizeof(struct dogType) , 1, fDataDogs);
   }
   checkfclose(fPetNames, PET_NAMES_PATH);
   free(newDog);
   checkfclose(fDataDogs,DATA_DOGS_PATH);
 
-  // To use the currentId when inserting a new structure
   FILE* fCurrentId = checkfopen(CURRENT_ID_PATH, "w");
   fwrite(&id, sizeof(int), 1, fCurrentId);
   checkfclose(fCurrentId,CURRENT_ID_PATH);

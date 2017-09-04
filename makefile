@@ -10,17 +10,15 @@
 # <
 
 # Plano
-#p1-dogProgram: structGenerator.c p1-dogProgram.c
-	#gcc -o p1-dogProgram structGenerator.c p1-dogProgram.c -I.
+p1-dogProgram: structGenerator.c p1-dogProgram.c
+	gcc -o p1-dogProgram structGenerator.c p1-dogProgram.c -I.
 
 # Usando constantes
 # Creamos "archivos objeto" .o
 
-CC=gcc
-CFLAGS=-I.
 
-p1-dogProgram: structGenerator.o p1-dogProgram.o
-	$(CC) -o p1-dogProgram structGenerator.o p1-dogProgram.o -I.
+# p1-dogProgram: structGenerator.o p1-dogProgram.o atributes.c linkedList.c hashTable.c
+	# gcc -o p1-dogProgram structGenerator.o p1-dogProgram.o -I.
 
 # Agregando dependencias al .h
 
