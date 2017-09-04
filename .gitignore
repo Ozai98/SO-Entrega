@@ -22,3 +22,9 @@ p1-dogProgram
 1\.txt
 
 10000001\.txt
+
+makefile
+
+p1-dogProgram\.o
+
+structGenerator\.o
