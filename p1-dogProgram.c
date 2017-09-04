@@ -219,6 +219,7 @@ void seeReg(struct List** hashTable){
 			//Si no, reejecuta el menu
 			}else{
 				printf("%s\n", "Presione enter para continuar");
+				getchar();
 				exeMenu(hashTable);
 			}
 		}
@@ -236,51 +237,53 @@ void deleteReg(struct List** hashTable){
 	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
 
-	printf("%s\n", "Ingrese el id del registro a eliminar");
+	printf("%s\n", "Ingrese la posición del registro a eliminar");
 	scanf("%i", &delReg);
 	delReg-=1;
 	fseek(dataDogs, 0, SEEK_END);
 	long numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
 	rewind(dataDogs);
-	for(i; i<numberOfStructures; i++){
-		//Copia todos los registros en el archivo nuevo
-		filePointer = ftell(dataDogs);
-		fread(currDog, sizeof(struct dogType), 1, dataDogs);
-		if(filePointer == delReg*sizeof(struct dogType)){
-			//Si encuentra el archivo a eliminar, lo elimina de la hash y salta la copia de este registro en el nuevo archivo
-			code = htHashFunction(currDog->name);
-			dllRewind(hashTable[code]);
+	if(delReg < 1 || delReg > numberOfStructures){
+		printf("%s\n", "El registro que desea eliminar no existe, presione enter para continuar");
+		checkfclose(dataDogs, DATA_DOGS_PATH);
+		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
+	}else{
+		for(i; i<numberOfStructures; i++){
+			//Copia todos los registros en el archivo nuevo
+			filePointer = ftell(dataDogs);
+			fread(currDog, sizeof(struct dogType), 1, dataDogs);
+			if(filePointer == delReg*sizeof(struct dogType)){
+				//Si encuentra el archivo a eliminar, lo elimina de la hash y salta la copia de este registro en el nuevo archivo
+				code = htHashFunction(currDog->name);
+				dllRewind(hashTable[code]);
 
-			while(dllHasNext(hashTable[code])){
+				while(dllHasNext(hashTable[code])){
+					if(dllGetCurrData(hashTable[code]) == filePointer){
+						dllDeleteCurr(hashTable[code]);
+						break;
+					}
+					dllNext(hashTable[code]);
+				}
 				if(dllGetCurrData(hashTable[code]) == filePointer){
 					dllDeleteCurr(hashTable[code]);
-					break;
 				}
-				dllNext(hashTable[code]);
+				success = 1;
+				continue;
 			}
-			if(dllGetCurrData(hashTable[code]) == filePointer){
-				dllDeleteCurr(hashTable[code]);
-			}
-			success = 1;
-			continue;
+			fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
 		}
-		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
-	}
-	//Si no lo encuentra copia el archivo de manera exacta
-	free(currDog);
-	checkfclose(dataDogs, DATA_DOGS_PATH);
-	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
-	remove(DATA_DOGS_PATH);
-	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
-
-	if(success){
-		printf("%s\n", "Elminación exitosa, presione enter para continuar");
+		printf("%s\n", "Eliminación exitosa... espere por favor");
 		htFree(hashTable);
 		struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+		free(currDog);
+		checkfclose(dataDogs, DATA_DOGS_PATH);
+		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
+		remove(DATA_DOGS_PATH);
+		rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
 		htInit(hashTable);
 		htLoad(hashTable);
-	}else
-		printf("%s\n", "El archivo que desea eliminar no existe, presione enter para continuar");
+		printf("%s\n", "Presione enter para continuar");
+	}
 	getchar();
 	exeMenu(hashTable);
 }
