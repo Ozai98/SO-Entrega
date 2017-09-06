@@ -20,16 +20,16 @@ int htHashFunction(char* str){
 }
 //Carga la hashTable con los registros de dataDogs.dat
 void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
-	long filePointer = 0;
+	int filePointer = 0;
 	int code = 0;
 	int i = 0;
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
-	long numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
+	int numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
 	rewind(dataDogs);
 
-	for(i; i<numberOfStructures; i++){
+	for(i=0; i<numberOfStructures; i++){
 		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
 		code = htHashFunction(currDog->name);
@@ -64,8 +64,7 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 	int success = 0;
 	int i = 0;
 	int quit = 0;
-	int code;
-	code = htHashFunction(name);
+	int code = htHashFunction(name);
 
 	if(hashTable[code] == NULL)
 		printf("%s\n","Mascota no existe");
@@ -116,7 +115,7 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 	return success;
 }
 //Añade un valor a la hashTable
-void htAdd(struct List* hashTable[HASH_TABLE_SIZE], char* name, long pos){
+void htAdd(struct List* hashTable[HASH_TABLE_SIZE], char* name, int pos){
 	int code;
 	code = htHashFunction(name);
 	if(hashTable[code] == NULL){

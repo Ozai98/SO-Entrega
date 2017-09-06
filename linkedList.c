@@ -1,14 +1,15 @@
 #include<stdio.h>
 #include<stdlib.h>
 
+//  sizeof(struct LIst) ===> 24 bytes
 struct List{
   struct Node* head;
   struct Node* curr;
   int size;
 };
-
+//  sizeof(struct Node) ===> 24 bytes
 struct Node{
-	long data;
+	int data;
 	struct Node* next;
 	struct Node* prev;
 };
@@ -44,7 +45,7 @@ int dllHasNext(void* p){
   return 0;
 }
 //  Retorna el nodo actual y lo mueve al siguiente
-long dllNext(void* p){
+int dllNext(void* p){
   struct List* list = p;
   if(dllHasNext(list)){
     list->curr = list->curr->next;
@@ -53,7 +54,7 @@ long dllNext(void* p){
   printf("%s\n","Error at call dllNext()\n");
 }
 //  Obtiene el dato del nodo actual
-long dllGetCurrData(void* p){
+int dllGetCurrData(void* p){
   struct List* list = p;
   if(list->curr != NULL)
     return list->curr->data;
@@ -61,7 +62,7 @@ long dllGetCurrData(void* p){
   exit(-1);
 }
 //  Asigna el dato al nodo actual
-void dllSetCurrData(void* p, long data){
+void dllSetCurrData(void* p, int data){
   struct List* list = p;
   if(list->curr != NULL)
     list->curr->data = data;
@@ -71,7 +72,7 @@ void dllSetCurrData(void* p, long data){
   }
 }
 //  Añade como cabeza un nodo a la estructura
-void dllAddHead(void* p, long data){
+void dllAddHead(void* p, int data){
   struct List* list = p;
   struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
   newNode->data = data;
@@ -84,7 +85,7 @@ void dllAddHead(void* p, long data){
   list->size += 1;
 }
 //  Retorna el valor del nodo actual y elimina el nodo
-long dllDeleteCurr(void* p){
+int dllDeleteCurr(void* p){
   struct List* list = p;
 
   if(dllIsEmpty(list)){
@@ -101,7 +102,7 @@ long dllDeleteCurr(void* p){
     if(list->curr->next != NULL)
       list->curr->next->prev = list->curr->prev;
   }
-  long data = list->curr->data;
+  int data = list->curr->data;
   free(list->curr);
   list->curr = list->head;
   list->size -= 1;
@@ -113,10 +114,10 @@ void dllPrintAll(void* p){
   struct Node* currNode = list->head;
   if(!dllIsEmpty(list)){
     while(currNode->next != NULL){
-      printf("%ld\n", currNode->data);
+      printf("%i\n", currNode->data);
       currNode = currNode->next;
     }
-    printf("%ld\n", currNode->data);
+    printf("%i\n", currNode->data);
   }
 }
 //  Libera la memoria asignada a cada uno de los nodos de la estructura y la estructura misma
