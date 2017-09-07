@@ -3,7 +3,7 @@
 //Inicializa la hashTable
 void htInit(struct List* hashTable[HASH_TABLE_SIZE]){
 	int i=0;
-	for(i; i<HASH_TABLE_SIZE; i++){
+	for(i=0; i<HASH_TABLE_SIZE; i++){
 		hashTable[i] = NULL;
 	}
 }
@@ -11,25 +11,25 @@ void htInit(struct List* hashTable[HASH_TABLE_SIZE]){
 int htHashFunction(char* str){
 	int sum = 0;
 	int i=0;
-	for(i=0; i<NAME_SIZE; i++){
-		if(str[i] == 0)
-			break;
+	for(i=0; i<strlen(str); i++){
 		sum += tolower(str[i])*(i+1);
+		sum%=HASH_TABLE_SIZE;
 	}
-	return sum%HASH_TABLE_SIZE;
+	return sum;
 }
 //Carga la hashTable con los registros de dataDogs.dat
-void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
+void htLoad(struct List** hashTable){
 	int filePointer = 0;
 	int code = 0;
 	int i = 0;
+
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
-	int numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
+	int nStructures = ftell(dataDogs)/sizeof(struct dogType);
 	rewind(dataDogs);
 
-	for(i=0; i<numberOfStructures; i++){
+	for(i=0; i<nStructures; i++){
 		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
 		code = htHashFunction(currDog->name);
@@ -39,11 +39,12 @@ void htLoad(struct List* hashTable[HASH_TABLE_SIZE]){
 		}
 		dllAddHead(hashTable[code], filePointer);
 	}
+
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	free(currDog);
 }
 //Imprime todos los valores de la hashTable
-void htPrintAll(struct List* hashTable[HASH_TABLE_SIZE]){
+void htPrintAll(struct List** hashTable){
 	int i = 0;
 	for(i; i < HASH_TABLE_SIZE; i++){
 		if(hashTable[i] != NULL)
@@ -51,16 +52,16 @@ void htPrintAll(struct List* hashTable[HASH_TABLE_SIZE]){
 	}
 }
 //Libera el espacio de memoria ocupado por la hashTable
-void htFree(struct List* hashTable[HASH_TABLE_SIZE]){
+void htFree(struct List** hashTable){
   int i;
   for(i=0; i<HASH_TABLE_SIZE; i++){
-		if(hashTable[i] = NULL)
+		if(hashTable[i] != NULL)
     	dllFree(hashTable[i]);
   }
 	free(hashTable);
 }
 //Busca un valor en la hashTable
-int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
+int htSearch(struct List** hashTable, char* name){
 	int success = 0;
 	int i = 0;
 	int quit = 0;
@@ -77,7 +78,7 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 		char nameAux[NAME_SIZE];
 		strcpy(nameAux, name);
 
-		for(i = 0; nameAux[i]!=0; i++){
+		for(i = 0; i<strlen(nameAux); i++){
 			nameAux[i] = tolower(nameAux[i]);
 		}
 		while(dllHasNext(hashTable[code])){
@@ -85,7 +86,7 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 			fread(newDog, sizeof(struct dogType), 1, dataDogs);
 			strcpy(dogNameAux, newDog->name);
 
-			for(i = 0; dogNameAux[i]!=0; i++){
+			for(i = 0; i<strlen(dogNameAux); i++){
 				dogNameAux[i] = tolower(dogNameAux[i]);
 			}
 			if(!strcmp(dogNameAux, nameAux)){
@@ -100,7 +101,7 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 		fread(newDog, sizeof(struct dogType), 1, dataDogs);
 		strcpy(dogNameAux, newDog->name);
 
-		for(i = 0; dogNameAux[i]!=0; i++){
+		for(i = 0; i<strlen(dogNameAux); i++){
 			dogNameAux[i] = tolower(dogNameAux[i]);
 		}
 		if(!strcmp(dogNameAux, nameAux)){
@@ -115,7 +116,7 @@ int htSearch(struct List* hashTable[HASH_TABLE_SIZE], char* name){
 	return success;
 }
 //Añade un valor a la hashTable
-void htAdd(struct List* hashTable[HASH_TABLE_SIZE], char* name, int pos){
+void htAdd(struct List** hashTable, char* name, int pos){
 	int code;
 	code = htHashFunction(name);
 	if(hashTable[code] == NULL){

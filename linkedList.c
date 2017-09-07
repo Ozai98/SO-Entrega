@@ -1,11 +1,11 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 //  sizeof(struct LIst) ===> 24 bytes
 struct List{
   struct Node* head;
   struct Node* curr;
-  int size;
+  // struct Node* prevCurr;
 };
 //  sizeof(struct Node) ===> 24 bytes
 struct Node{
@@ -16,7 +16,6 @@ struct Node{
 //  Inicia la estructura
 void dllInit(void* p){
   struct List* list = p;
-  list->size = 0;
   list->head = NULL;
   list->curr = list->head;
 }
@@ -82,7 +81,6 @@ void dllAddHead(void* p, int data){
     list->head->prev = newNode;
   list->head = newNode;
   list->curr = list->head;
-  list->size += 1;
 }
 //  Retorna el valor del nodo actual y elimina el nodo
 int dllDeleteCurr(void* p){
@@ -105,7 +103,6 @@ int dllDeleteCurr(void* p){
   int data = list->curr->data;
   free(list->curr);
   list->curr = list->head;
-  list->size -= 1;
   return data;
 }
 //  Imprime el dato de cada uno de los nodos de la estructura

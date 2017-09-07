@@ -72,7 +72,18 @@ void menu(struct List** hashTable){
 }
 //Función que reejecuta el menú
 void exeMenu(struct List** hashTable){
-	getchar();
+  static struct termios newt, oldt;
+  printf("\nPresione una tecla para continuar...");
+  tcgetattr( STDIN_FILENO, &oldt);  //Obteniendo la configuracion actual de la terminal
+  newt = oldt;        //Copiando la configuracion
+	//	Desactivando las banderas ECHO e ICANON
+	newt.c_lflag &= ~(ICANON | ECHO);  //Desactivando la bandera ICANON para no esperar un caracter especial al final
+  newt.c_cc[VMIN] = 1;
+  tcsetattr( STDIN_FILENO, TCSANOW, &newt);//Configurando la terminal con los nuevos cambios
+	__fpurge(stdin);      //Limpiando el buffer de entrada
+  getchar();        //Esperando un caracter
+  tcsetattr( STDIN_FILENO, TCSANOW, &oldt);//Configurando la terminal a su forma original
+	printf("\n");
 	menu(hashTable);
 }
 // Función que añade un registro a al archivo
@@ -150,8 +161,8 @@ void addReg(struct List** hashTable){
 	FILE* fptc = checkfopen(CURRENT_ID_PATH, "r+");
 	unsigned int id;
 	fread(&id, sizeof(int), 1, fptc);
-	id += 1;
 	newDog->id = id;
+	id += 1;
 	rewind(fptc);
 	fwrite(&id, sizeof(int), 1, fptc);
 	checkfclose(fptc, CURRENT_ID_PATH);
@@ -172,7 +183,7 @@ void addReg(struct List** hashTable){
 	//Libera el espacio en memoria de la estructura cierra el archivo dataDogs.dat y reejecuta el menú
 	free(newDog);
 	checkfclose(fptr, DATA_DOGS_PATH);
-	printf("Registro añadido exitosamente. Presione enter para continuar");
+	printf("Registro añadido exitosamente.\n");
 	exeMenu(hashTable);
 }
 //	Función que permite ver un registro de dataDogs.dat
@@ -209,19 +220,11 @@ void seeReg(struct List** hashTable){
 			//Si la respuesta es afirmativa, abre la historia clinima
 			if(ans == 's' || ans == 'S'){
 				char file_name_2[12];
-				int potato = numberReg+1;
-
-				sprintf(file_name_2, "gedit %d.txt", potato);
+				sprintf(file_name_2, "gedit %d.txt", (numberReg+1));
 				system(file_name_2);
-				printf("%s\n", "Presione enter para continuar");
-					getchar();
-					exeMenu(hashTable);
-			//Si no, reejecuta el menu
-			}else{
-				printf("%s\n", "Presione enter para continuar");
-				getchar();
-				exeMenu(hashTable);
 			}
+			//Si no, reejecuta el menu
+			exeMenu(hashTable);
 		}
 	}while (value == 0);
 }
@@ -237,18 +240,20 @@ void deleteReg(struct List** hashTable){
 	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
 
+	fseek(dataDogs, 0, SEEK_END);
+	int nStructures = ftell(dataDogs)/sizeof(struct dogType);
+	printf("El número de registros es de: %i\n",nStructures);
+	rewind(dataDogs);
+
 	printf("%s\n", "Ingrese la posición del registro a eliminar");
 	scanf("%i", &delReg);
 	delReg-=1;
-	fseek(dataDogs, 0, SEEK_END);
-	int numberOfStructures = ftell(dataDogs)/sizeof(struct dogType);
-	rewind(dataDogs);
-	if(delReg < 1 || delReg > numberOfStructures){
-		printf("%s\n", "El registro que desea eliminar no existe, presione enter para continuar");
+	if(delReg < 1 || delReg > nStructures){
+		printf("%s\n", "El registro que desea eliminar no existe");
 		checkfclose(dataDogs, DATA_DOGS_PATH);
 		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
 	}else{
-		for(i; i<numberOfStructures; i++){
+		for(i; i<nStructures; i++){
 			//Copia todos los registros en el archivo nuevo
 			filePointer = ftell(dataDogs);
 			fread(currDog, sizeof(struct dogType), 1, dataDogs);
@@ -275,16 +280,14 @@ void deleteReg(struct List** hashTable){
 		printf("%s\n", "Eliminación exitosa... espere por favor");
 		htFree(hashTable);
 		struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-		free(currDog);
 		checkfclose(dataDogs, DATA_DOGS_PATH);
 		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
 		remove(DATA_DOGS_PATH);
 		rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
 		htInit(hashTable);
 		htLoad(hashTable);
-		printf("%s\n", "Presione enter para continuar");
 	}
-	getchar();
+	free(currDog);
 	exeMenu(hashTable);
 }
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
@@ -296,9 +299,9 @@ void searchReg(struct List** hashTable){
 	petName[strlen(petName)-1]=0;
 	int code = htHashFunction(petName);
 	if(htSearch(hashTable,petName)){
-		printf("%s", "Busqueda exitosa, presione enter para continuar");
+		printf("%s\n", "Busqueda exitosa");
 	}else{
-		printf("%s", "Este registro no existe, presione enter para continuar");
+		printf("%s\n", "Este registro no existe");
 	}
 	exeMenu(hashTable);
 }

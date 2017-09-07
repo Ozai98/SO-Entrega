@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include<ctype.h>
+#include <ctype.h>
+#include <unistd.h>
+// exeMenu
+#include <termios.h>
+#include <stdio_ext.h>
 //Constantes de tamaño
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
