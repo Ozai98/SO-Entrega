@@ -3,23 +3,22 @@
 #include <ctype.h>
 
 //Declaración de las funciones
-void menu(struct List** hashTable);
-void exeMenu(struct List** hashTable);
-void addReg(struct List** hashTable);
-void seeReg(struct List** hashTable);
-void deleteReg(struct List** hashTable);
-void searchReg(struct List** hashTable);
+void menu();
+void exeMenu();
+void addReg();
+void seeReg();
+void deleteReg();
+void searchReg();
 
+int hashTable[HASH_TABLE_SIZE];
 int main(){
-	struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-	htInit(hashTable);
-	htLoad(hashTable);
-	menu(hashTable);
-	htFree(hashTable);
+	// struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
+	htLoad();
+	menu();
 	return 0;
 }
 // Menú que despliega las opciones
-void menu(struct List** hashTable){
+void menu(){
 	char input[32];
 	int num = 0;
 	printf("--------------------------------------------------\n");
@@ -39,28 +38,27 @@ void menu(struct List** hashTable){
 		scanf("%32s", input);
 		num = input[0]-48;
 		printf("Opcion %s: ", input);
-		if (strlen(input) != 1 || num < 1 || num > 5){
+		if (strlen(input) != 1 || num < 1 || num > 5)
 			printf("%s\n", "El valor ingresado no es valido, intente de nuevo");
-		}
 	}while(strlen(input) != 1 || num < 1 || num > 5);
 
 	switch(num){
 		case 1:
 			printf("Ingresar registro\n");
-			addReg(hashTable);
+			addReg();
 			break;
 		case 2:
 			printf("Ver registro\n");
-			seeReg(hashTable);
+			seeReg();
 			break;
 		case 3:
 			printf("Borrar registro\n");
-			deleteReg(hashTable);
-			htLoad(hashTable);
+			deleteReg();
+			htLoad();
 			break;
 		case 4:
 			printf("Buscar registro\n");
-			searchReg(hashTable);
+			searchReg();
 			break;
 		case 5:
 			printf("Salir\n");
@@ -71,7 +69,7 @@ void menu(struct List** hashTable){
 	}
 }
 //Función que reejecuta el menú
-void exeMenu(struct List** hashTable){
+void exeMenu(){
   static struct termios newt, oldt;
   printf("\nPresione una tecla para continuar...");
   tcgetattr( STDIN_FILENO, &oldt);  //Obteniendo la configuracion actual de la terminal
@@ -84,10 +82,10 @@ void exeMenu(struct List** hashTable){
   getchar();        //Esperando un caracter
   tcsetattr( STDIN_FILENO, TCSANOW, &oldt);//Configurando la terminal a su forma original
 	printf("\n");
-	menu(hashTable);
+	menu();
 }
 // Función que añade un registro a al archivo
-void addReg(struct List** hashTable){
+void addReg(){
 	char term;
 	int numberRight = 0;
 	char petName[NAME_SIZE];
@@ -187,7 +185,7 @@ void addReg(struct List** hashTable){
 	exeMenu(hashTable);
 }
 //	Función que permite ver un registro de dataDogs.dat
-void seeReg(struct List** hashTable){
+void seeReg(){
 	int numberReg;
 	int value = 0;
 	int totalSize;
@@ -229,7 +227,7 @@ void seeReg(struct List** hashTable){
 	}while (value == 0);
 }
 //	Función que elimina un registro de datadogs.dat
-void deleteReg(struct List** hashTable){
+void deleteReg(){
 	int i = 0;
 	int filePointer = 0;
 	int code = 0;
@@ -291,7 +289,7 @@ void deleteReg(struct List** hashTable){
 	exeMenu(hashTable);
 }
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
-void searchReg(struct List** hashTable){
+void searchReg(){
 	char petName[NAME_SIZE];
   printf("Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32: ");
 	getchar();
