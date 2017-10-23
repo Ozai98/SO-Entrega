@@ -17,7 +17,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define PORT 3535
+#define PORT 3539
 #define MESSAGESIZE 22
 
 
@@ -51,6 +51,12 @@ int main(int argc, char *argv[]){
     perror("Connect error");
     exit(-1);
   }
+  // int num = 99;
+  // r = send(sd, num, sizeof(int), 0);
+  // if(r == -1){
+  //   perror("Send error\n");
+  //   exit(-1);
+  // }
 
 	menu(sd);
 
@@ -83,7 +89,7 @@ void menu(int sd){
 			printf("%s\n", "El valor ingresado no es valido, intente de nuevo");
 	}while(strlen(input) != 1 || num < 1 || num > 5);
 
-  r = send(sd, num, sizeof(int), 0);
+  r = send(sd, &num, sizeof(int), 0);
   if(r == -1){
     perror("Send error\n");
     exit(-1);
@@ -96,7 +102,7 @@ void menu(int sd){
 			break;
 		case 2:
 			printf("Ver registro\n");
-			// seeReg();
+			seeReg(sd);
 			break;
 		case 3:
 			printf("Borrar registro\n");
@@ -104,7 +110,7 @@ void menu(int sd){
 			break;
 		case 4:
 			printf("Buscar registro\n");
-			// searchReg();
+			searchReg();
 			break;
 		case 5:
 			printf("Salir\n");
@@ -206,16 +212,6 @@ void addReg(int sd){
 
 	//Creación de la estructura
 	struct dogType* newDog = malloc(sizeof(struct dogType));
-	FILE* fptr = checkfopen(DATA_DOGS_PATH, "r+");
-	FILE* fptc = checkfopen(CURRENT_ID_PATH, "r+");
-	unsigned int id;
-	fread(&id, sizeof(int), 1, fptc);
-	newDog->id = id;
-	id += 1;
-	rewind(fptc);
-	fwrite(&id, sizeof(int), 1, fptc);
-	checkfclose(fptc, CURRENT_ID_PATH);
-
 	strcpy(newDog->name, petName);
 	strcpy(newDog->type, type);
 	strcpy(newDog->breed, breed);
@@ -224,74 +220,74 @@ void addReg(int sd){
 	newDog->weight = weight;
 	newDog->gender = sex;
 	newDog->next = 0;
-
 	//Muestra la estructura creada
 	showDogType(newDog);
-
 
   int r = send(sd, newDog, sizeof(struct dogType), 0);
   if(r == -1){
     perror("Send error\n");
     exit(-1);
   }
-
 	//Libera el espacio en memoria de la estructura cierra el archivo dataDogs.dat y reejecuta el menú
 	free(newDog);
-	checkfclose(fptr, DATA_DOGS_PATH);
-
 	// printf("Registro añadido exitosamente.\n");
 	exeMenu(sd);
 }
 
-// //	Función que permite ver un registro de dataDogs.dat
-// void seeReg(){
-// 	int numberReg;
-// 	int value = 0;
-// 	int totalSize;
-// 	char ans;
-//
-//
-//   r = recv(sd, totalSize, sizeof(int), 0);
-//   if(r != sizeof(int)){
-//     perror("Recv error");
-//     exit(-1);
-//   }
-//
-// 	printf("El número de registros es de: %i\n",totalSize);
-//   FILE* fptr = checkfopen(DATA_DOGS_PATH, "r");
-//   //El ciclo no es reactivo
-// 	do{
-// 		printf("%s\n", "Ingrese el número del registro a consultar");
-// 		scanf("%d", &numberReg);
-// 		//Si el numero ingresado se sale del rango de registros el registro solicitado no existe
-// 		if(numberReg < 1 || numberReg > totalSize)
-// 			printf("%s\n", "Este registro no existe");
-// 		else{
-// 			numberReg -= 1;
-// 			//Imprime el registro solicitado
-// 			value = 1;
-// 			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
-// 			fseek(fptr, numberReg*sizeof(struct dogType), SEEK_SET);
-// 			fread(newDog, sizeof(struct dogType), 1, fptr);
-// 			showFullDogType(newDog);
-//       free(newDog);
-//       checkfclose(fptr, DATA_DOGS_PATH);
-// 			printf("Consulta de registro exitosa\n");
-//
-// 			printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
-// 			scanf(" %c", &ans);
-// 			//Si la respuesta es afirmativa, abre la historia clinima
-// 			if(ans == 's' || ans == 'S'){
-// 				char file_name_2[12];
-// 				sprintf(file_name_2, "gedit %d.txt", (numberReg+1));
-// 				system(file_name_2);
-// 			}
-// 			//Si no, reejecuta el menu
-// 			exeMenu();
-// 		}
-// 	}while (value == 0);
-// }
-//
+//	Función que permite ver un registro de dataDogs.dat
+void seeReg(int sd){
+	int numberReg;
+	int value = 0;
+	int totalSize;
+	char ans;
+
+
+  int r = recv( sd, &totalSize, sizeof(int), 0);
+  if(r != sizeof(int)){
+    perror("Recv error");
+    exit(-1);
+  }
+	printf("El número de registros es de: %i\n",totalSize);
+  // El ciclo no es reactivo
+	do{
+		printf("%s\n", "Ingrese el número del registro a consultar");
+		scanf("%d", &numberReg);
+		//Si el numero ingresado se sale del rango de registros el registro solicitado no existe
+		if(numberReg < 1 || numberReg > totalSize)
+			printf("%s\n", "Este registro no existe");
+		else{
+			numberReg -= 1;
+      r = send(sd, &numberReg, sizeof(int), 0);
+      if(r == -1){
+        perror("Send error\n");
+        exit(-1);
+      }
+			//Imprime el registro solicitado
+			value = 1;
+			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
+      r = recv(sd, newDog, sizeof(struct dogType), 0);
+      if(r != sizeof(struct dogType)){
+        perror("Recv error");
+        exit(-1);
+      }
+      showDogType(newDog);
+      free(newDog);
+      printf("Consulta de registro exitosa\n");
+
+			printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
+			scanf(" %c", &ans);
+			//Si la respuesta es afirmativa, abre la historia clinima
+			if(ans == 's' || ans == 'S'){
+				char file_name_2[12];
+				sprintf(file_name_2, "gedit %d.txt", (numberReg+1));
+				system(file_name_2);
+			}
+			//Si no, reejecuta el menu
+			exeMenu(sd);
+		}
+	}while (value == 0);
+}
+
 // //	Función que elimina un registro de datadogs.dat
 // void deleteReg(){
 // 	int i = 0;
@@ -341,18 +337,38 @@ void addReg(int sd){
 // 	free(currDog);
 // 	exeMenu();
 // }
-//
-// //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
-// void searchReg(){
-// 	char petName[NAME_SIZE];
-//   printf("Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32: ");
-// 	getchar();
-// 	fgets(petName, NAME_SIZE, stdin);
-// 	petName[strlen(petName)-1]=0;
-// 	if(htSearch(hashTable, petName)){
-// 		printf("%s\n", "Busqueda exitosa");
-// 	}else{
-// 		printf("%s\n", "Este registro no existe");
-// 	}
-// 	exeMenu();
-// }
+
+//	Función que busca en dataDogs.dat las mascotas con el mismo nombre
+void searchReg(){
+	char petName[NAME_SIZE];
+  printf("Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32: ");
+	getchar();
+	fgets(petName, NAME_SIZE, stdin);
+	petName[strlen(petName)-1]=0;
+
+  int r = send(sd, petName, NAME_SIZE, 0);
+  if(r == -1){
+    perror("Send error\n");
+    exit(-1);
+  }
+  do{
+    r = recv(sd, newDog, sizeof(struct dogType), 0);
+    if(r != sizeof(struct dogType)){
+      perror("Recv error");
+      exit(-1);
+    }
+  }while(newDog != NULL);
+
+  int success;
+  r = recv(sd, &success, sizeof(int), 0);
+  if(r != sizeof(int)){
+    perror("Recv error");
+    exit(-1);
+  }
+	if(success){
+		printf("%s\n", "Busqueda exitosa");
+	}else{
+		printf("%s\n", "Este registro no existe");
+	}
+	exeMenu();
+}
