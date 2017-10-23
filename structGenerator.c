@@ -27,7 +27,7 @@ int main(){
   // generar .dat
   txttoDat();
 
-  // TODO: Crear mas tipos y razas
+  // TODO: Crear mas tipos y razashashTable
   char* type[4]={"Perro","Gato","Roedor","Reptiles"};
   char* breed[4][3] = {
     {"Pastor Alemán","Labrador","Chihuahua"},

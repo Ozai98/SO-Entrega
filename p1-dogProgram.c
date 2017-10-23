@@ -55,8 +55,7 @@ void menu(){
 			break;
 		case 3:
 			printf("Borrar registro\n");
-			// deleteReg();
-			// htLoad();
+			deleteReg();
 			break;
 		case 4:
 			printf("Buscar registro\n");
@@ -178,28 +177,21 @@ void addReg(){
 	newDog->gender = sex;
 	newDog->next = 0;
 
-
-
 	//Muestra la estructura creada
-		showDogType(newDog);
-
-
-
+	showDogType(newDog);
 
 	//Cambia el next de la estructura anterior del mismo nombre
 	code = htHashFunction(petName);
 	next = hashTable[code];
 	struct dogType* currDog = malloc(sizeof(struct dogType));
-	printf("Next: %i.\n", next);
 	if(next == -1){
 		fseek(fptr, 0, SEEK_END);
 		hashTable[code] = (int)ftell(fptr);
 	}
 	while(next > 0){
-		printf("Next: %i.\n", next);
 		fseek(fptr, next, SEEK_SET);
 		fread(currDog, sizeof(struct dogType), 1, fptr);
-		showFullDogType(currDog);
+		// showFullDogType(currDog);
 		if(currDog->next == 0){
 			fseek(fptr, 0, SEEK_END);
 			currDog->next = (int)ftell(fptr);
@@ -210,7 +202,6 @@ void addReg(){
 		next = currDog->next;
 	}
 	free(currDog);
-
 
 	//Añade la estructura a la hashTable y a dataDogs.dat
 	fseek(fptr, 0, SEEK_END);
@@ -267,67 +258,54 @@ void seeReg(){
 }
 
 //	Función que elimina un registro de datadogs.dat
-// void deleteReg(){
-// 	int i = 0;
-// 	int filePointer = 0;
-// 	int code = 0;
-// 	int delReg = 0;
-// 	int success = 0;
-//
-// 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
-// 	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
-// 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
-//
-// 	fseek(dataDogs, 0, SEEK_END);
-// 	int nStructures = ftell(dataDogs)/sizeof(struct dogType);
-// 	printf("El número de registros es de: %i\n",nStructures);
-// 	rewind(dataDogs);
-//
-// 	printf("%s\n", "Ingrese la posición del registro a eliminar");
-// 	scanf("%i", &delReg);
-// 	delReg-=1;
-// 	if(delReg < 1 || delReg > nStructures){
-// 		printf("%s\n", "El registro que desea eliminar no existe");
-// 		checkfclose(dataDogs, DATA_DOGS_PATH);
-// 		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
-// 	}else{
-// 		for(i; i<nStructures; i++){
-// 			//Copia todos los registros en el archivo nuevo
-// 			filePointer = ftell(dataDogs);
-// 			fread(currDog, sizeof(struct dogType), 1, dataDogs);
-// 			if(filePointer == delReg*sizeof(struct dogType)){
-// 				//Si encuentra el archivo a eliminar, lo elimina de la hash y salta la copia de este registro en el nuevo archivo
-// 				code = htHashFunction(currDog->name);
-// 				dllRewind(hashTable[code]);
-//
-// 				while(dllHasNext(hashTable[code])){
-// 					if(dllGetCurrData(hashTable[code]) == filePointer){
-// 						dllDeleteCurr(hashTable[code]);
-// 						break;
-// 					}
-// 					dllNext(hashTable[code]);
-// 				}
-// 				if(dllGetCurrData(hashTable[code]) == filePointer){
-// 					dllDeleteCurr(hashTable[code]);
-// 				}
-// 				success = 1;
-// 				continue;
-// 			}
-// 			fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
-// 		}
-// 		printf("%s\n", "Eliminación exitosa... espere por favor");
-// 		htFree();
-// 		struct List** hashTable = (struct List**)malloc(sizeof(struct List*)*HASH_TABLE_SIZE);
-// 		checkfclose(dataDogs, DATA_DOGS_PATH);
-// 		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
-// 		remove(DATA_DOGS_PATH);
-// 		rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
-// 		htInit();
-// 		htLoad();
-// 	}
-// 	free(currDog);
-// 	exeMenu();
-// }
+void deleteReg(){
+	int i = 0;
+	int filePointer = 0;
+	int code = 0;
+	int delReg = 0;
+	int success = 0;
+
+	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
+	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
+	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
+
+	fseek(dataDogs, 0, SEEK_END);
+	int nStructures = ftell(dataDogs)/sizeof(struct dogType);
+	printf("El número de registros es de: %i\n",nStructures);
+	rewind(dataDogs);
+
+	printf("%s\n", "Ingrese la posición del registro a eliminar");
+	scanf("%i", &delReg);
+	if(delReg < 1 || delReg > nStructures){
+		printf("%s\n", "El registro que desea eliminar no existe");
+		checkfclose(dataDogs, DATA_DOGS_PATH);
+		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
+	}else{
+		delReg-=1;
+		for(i; i<nStructures; i++){
+			//Copia todos los registros en el archivo nuevo
+			filePointer = ftell(dataDogs);
+			fread(currDog, sizeof(struct dogType), 1, dataDogs);
+			if(filePointer == delReg*sizeof(struct dogType)){
+				//Si encuentra el archivo a eliminar, lo elimina de la hash y salta la copia de este registro en el nuevo archivo
+				success = 1;
+				continue;
+			}
+			currDog->next = 0;
+			fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
+		}
+		printf("%s\n", "Eliminación exitosa... espere por favor");
+
+		checkfclose(dataDogs, DATA_DOGS_PATH);
+		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
+		remove(DATA_DOGS_PATH);
+		rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
+		htInit(hashTable);
+		htLoad(hashTable);
+	}
+	free(currDog);
+	exeMenu();
+}
 
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
 void searchReg(){
