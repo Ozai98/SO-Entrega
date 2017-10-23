@@ -30,3 +30,7 @@ p1-dogProgram\.o
 structGenerator\.o
 
 10000000\.txt
+
+p2-dogServer
+
+p2-dogClient
