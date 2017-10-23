@@ -6,7 +6,8 @@
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
 #define BREED_SIZE 16
-#define STRUCTURES_NUMBER 1e+7
+#define STRUCTURES_NUMBER 10000
+// #define STRUCTURES_NUMBER 1e+7
 #define HASH_TABLE_SIZE 2500
 //Constantes de nombre de archivo
 #define NOMBRES_MASCOTAS_PATH "nombresMascotas.txt"
@@ -78,7 +79,7 @@ void showDogTypeTable(void* p){
 	for(i=0; i<cantTab; i++)
 		strcat(auxBreed, tab);
 
-	printf("%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\n",dog->id, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed);
+	printf("%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\t%i\n",dog->id, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed, dog->next);
 }
 //Funcion que abre un archivo y captura errores
 FILE* checkfopen(const char *path, const char *mode){

@@ -89,18 +89,18 @@ void exeMenu(){
 // Función que añade un registro a al archivo
 void addReg(){
 	char term;
-	int numberRight = 0;
 	char petName[NAME_SIZE];
 	char type[TYPE_SIZE];
 	char  breed[BREED_SIZE];
 	char sex;
 	int age;
-	char* strAge;
 	int height;
 	float weight;
+
 	int rightValue = 0;
-	int next = -1;
+	int next;
 	int code = 0;
+	int i;
 
 	//Captura de los datos de la mascota
 	printf("%s", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres,\nsi lo hace solo se guardaran los primeros 32: ");
@@ -180,31 +180,41 @@ void addReg(){
 
 
 
-
 	//Muestra la estructura creada
-	showDogType(newDog);
+		showDogType(newDog);
 
 
-  //Añade la estructura a la hashTable y a dataDogs.dat
-	fseek(fptr, 0, SEEK_END);
-	fwrite(newDog, sizeof(struct dogType), 1, fptr);
+
 
 	//Cambia el next de la estructura anterior del mismo nombre
 	code = htHashFunction(petName);
 	next = hashTable[code];
 	struct dogType* currDog = malloc(sizeof(struct dogType));
-	while(next < 0){
+	printf("Next: %i.\n", next);
+	if(next == -1){
+		fseek(fptr, 0, SEEK_END);
+		hashTable[code] = (int)ftell(fptr);
+	}
+	while(next > 0){
+		printf("Next: %i.\n", next);
 		fseek(fptr, next, SEEK_SET);
 		fread(currDog, sizeof(struct dogType), 1, fptr);
+		showFullDogType(currDog);
 		if(currDog->next == 0){
 			fseek(fptr, 0, SEEK_END);
 			currDog->next = (int)ftell(fptr);
+			fseek(fptr, next, SEEK_SET);
 			fwrite(currDog, sizeof(struct dogType), 1, fptr);
 			break;
 		}
 		next = currDog->next;
 	}
 	free(currDog);
+
+
+	//Añade la estructura a la hashTable y a dataDogs.dat
+	fseek(fptr, 0, SEEK_END);
+	fwrite(newDog, sizeof(struct dogType), 1, fptr);
 
 	//Libera el espacio en memoria de la estructura cierra el archivo dataDogs.dat y reejecuta el menú
 	free(newDog);
@@ -237,7 +247,7 @@ void seeReg(){
 			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
 			fseek(fptr, numberReg*sizeof(struct dogType), SEEK_SET);
 			fread(newDog, sizeof(struct dogType), 1, fptr);
-			showDogType(newDog);
+			showFullDogType(newDog);
       free(newDog);
       checkfclose(fptr, DATA_DOGS_PATH);
 			printf("Consulta de registro exitosa\n");

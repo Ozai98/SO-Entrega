@@ -64,11 +64,9 @@ int htSearch(int* hashTable, char* name){
 		char dogNameAux[NAME_SIZE];
 		char nameAux[NAME_SIZE];
 		strcpy(nameAux, name);
-
 		for(i = 0; i<strlen(nameAux); i++){
 			nameAux[i] = tolower(nameAux[i]);
 		}
-
 		next = hashTable[htHashFunction(name)];
 		do{
 			fseek(dataDogs, next, SEEK_SET);
@@ -84,7 +82,6 @@ int htSearch(int* hashTable, char* name){
 					success = 1;
 				}
 				showDogTypeTable(newDog);
-				printf("Next: %i\n", newDog->next);
 			}
 			next = newDog->next;
 		}while(next != 0);

@@ -21,6 +21,7 @@ void printDataDogs(){
 
 int hashTable[HASH_TABLE_SIZE];
 int main(){
+  int j=0;
   htInit(hashTable);
   // htPrintAll(hashTable);
   // generar .dat
@@ -47,7 +48,6 @@ int main(){
   for(i=0; i<STRUCTURES_NUMBER; i++, id++){
     newDog->id = id;
     strcpy(newDog->name, getRandomName(fPetNames));
-    // strcpy(newDog->name, "Paquito");
     typeIdx = rand()%4;
     strcpy(newDog->type, type[typeIdx]);
     strcpy(newDog->breed, breed[typeIdx][rand()%3]);
@@ -58,10 +58,16 @@ int main(){
     newDog->next = 0;
 
     currPos = (int)ftell(fDataDogs);
-    currHash = htHashFunction(newDog->name);
+    //poner en minusculas newdog name
+    char nameAux[NAME_SIZE];
+    strcpy(nameAux, newDog->name);
+    for(j = 0; j<strlen(nameAux); j++)
+      nameAux[j] = tolower(nameAux[j]);
+    currHash = htHashFunction(nameAux);
+
     if(hashTable[currHash] != -1){
       fseek(fDataDogs, hashTable[currHash], SEEK_SET);
-      int r = (int)fread(prevDog, sizeof(struct dogType), 1, fDataDogs);
+      fread(prevDog, sizeof(struct dogType), 1, fDataDogs);
       prevDog->next = currPos;
       fseek(fDataDogs, hashTable[currHash], SEEK_SET);
       fwrite(prevDog, sizeof(struct dogType) , 1, fDataDogs);
