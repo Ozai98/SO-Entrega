@@ -17,17 +17,17 @@
 #include <string.h>
 #include <ctype.h>
 
-#define PORT 3539
+#define PORT 3547
 #define MESSAGESIZE 22
 
 
 //Declaración de las funciones
 void menu();
 void exeMenu();
-void addReg();
-void seeReg();
+void addReg(int sd);
+void seeReg(int sd);
 void deleteReg();
-void searchReg();
+void searchReg(int sd);
 
 int main(int argc, char *argv[]){
   int sd = socket(AF_INET, SOCK_STREAM, 0);
@@ -110,7 +110,7 @@ void menu(int sd){
 			break;
 		case 4:
 			printf("Buscar registro\n");
-			searchReg();
+			searchReg(sd);
 			break;
 		case 5:
 			printf("Salir\n");
@@ -339,7 +339,7 @@ void seeReg(int sd){
 // }
 
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
-void searchReg(){
+void searchReg(int sd){
 	char petName[NAME_SIZE];
   printf("Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32: ");
 	getchar();
@@ -351,24 +351,33 @@ void searchReg(){
     perror("Send error\n");
     exit(-1);
   }
+  int exists = 0;
+  r = recv(sd, &exists, sizeof(int), 0);
+  if(r != sizeof(int)){
+    perror("Recv error");
+    exit(-1);
+  }
+  printf("exists: %i\n", exists);
+  if(exists == -1){
+		printf("%s\n", "Este registro no existe");
+    exeMenu(sd);
+    return;
+  }
+  int success = 0;
+  struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
   do{
     r = recv(sd, newDog, sizeof(struct dogType), 0);
     if(r != sizeof(struct dogType)){
       perror("Recv error");
       exit(-1);
     }
+		if(success==0){
+			showDogTypeTableHead();
+			success = 1;
+		}
+    showDogTypeTable(newDog);
   }while(newDog != NULL);
-
-  int success;
-  r = recv(sd, &success, sizeof(int), 0);
-  if(r != sizeof(int)){
-    perror("Recv error");
-    exit(-1);
-  }
-	if(success){
-		printf("%s\n", "Busqueda exitosa");
-	}else{
-		printf("%s\n", "Este registro no existe");
-	}
-	exeMenu();
+  printf("%s\n", "Busqueda exitosa");
+  free(newDog);
+	exeMenu(sd);
 }

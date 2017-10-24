@@ -7,7 +7,7 @@
 #include <strings.h>
 #include <unistd.h>
 #define BACKLOG 2
-#define PORT 3539
+#define PORT 3547
 #define MESSAGESIZE 22
 
 // struct sockadd_in{
@@ -25,6 +25,7 @@
 //  little endian
 // htons(3535);
 
+void menu(int clientsd);
 void recvNewReg(int clientsd);
 void showReg(int clientsd);
 void showSearch(int clientsd);
@@ -72,8 +73,14 @@ int main(){
     exit(-1);
   }
 
+	menu(clientsd[0]);
+
+  close(clientsd[0]);
+  close(serversd);
+}
+void menu(int clientsd){
   int option;
-  r = recv(clientsd[0], &option, sizeof(int), 0);
+  int r = recv(clientsd, &option, sizeof(int), 0);
   if(r != sizeof(int)){
     perror("Recv error");
     exit(-1);
@@ -82,11 +89,11 @@ int main(){
   switch (option) {
 		case 1:
 			printf("Ingresar registro\n");
-			recvNewReg(clientsd[0]);
+			recvNewReg(clientsd);
 			break;
 		case 2:
 			printf("Ver registro\n");
-			showReg(clientsd[0]);
+			showReg(clientsd);
 			break;
 		case 3:
 			printf("Borrar registro\n");
@@ -94,7 +101,7 @@ int main(){
 			break;
 		case 4:
 			printf("Buscar registro\n");
-      showSearch(clientsd[0]);
+      showSearch(clientsd);
 			break;
 		case 5:
 			printf("Salir\n");
@@ -103,9 +110,6 @@ int main(){
 			printf("default\n");
 			break;
 	}
-
-  close(clientsd[0]);
-  close(serversd);
 }
 
 void recvNewReg(int clientsd){
@@ -165,6 +169,7 @@ void recvNewReg(int clientsd){
 
 	checkfclose(fptr, DATA_DOGS_PATH);
 	printf("Registro añadido exitosamente.\n");
+	menu(clientsd);
 }
 
 void showReg(int clientsd){
@@ -195,11 +200,12 @@ void showReg(int clientsd){
   free(newDog);
   checkfclose(fptr, DATA_DOGS_PATH);
   printf("Consulta de registro exitosa\n");
+	menu(clientsd);
 }
 
 void showSearch(int clientsd){
 	char name[NAME_SIZE];
-  int r = recv(sd, name, NAME_SIZE, 0);
+  int r = recv(clientsd, name, NAME_SIZE, 0);
   if(r != NAME_SIZE){
     perror("Recv error");
     exit(-1);
@@ -216,6 +222,14 @@ void showSearch(int clientsd){
     nameAux[j] = tolower(nameAux[j]);
   int code = htHashFunction(nameAux);
   int next = 0;
+
+
+	r = send(clientsd, &hashTable[code], sizeof(int), 0);
+	if(r == -1){
+		perror("Send error\n");
+		exit(-1);
+	}
+	printf("%s\n", name);
 
   if(hashTable[code] == -1)
 		printf("%s\n","Mascota no existe");
@@ -241,6 +255,11 @@ void showSearch(int clientsd){
 				dogNameAux[i] = tolower(dogNameAux[i]);
 			}
 			if(!strcmp(dogNameAux, nameAux)){
+				r = send(clientsd, newDog, sizeof(int), 0);
+				if(r == -1){
+					perror("Send error\n");
+					exit(-1);
+				}
 				if(success==0){
 					showDogTypeTableHead();
 					success = 1;
@@ -249,8 +268,15 @@ void showSearch(int clientsd){
 			showDogTypeTable(newDog);
 			next = newDog->next;
 		}while(next != 0);
+		newDog = NULL;
+		r = send(clientsd, newDog, sizeof(int), 0);
+		if(r == -1){
+			perror("Send error\n");
+			exit(-1);
+		}
 
 		free(newDog);
 		checkfclose(dataDogs, DATA_DOGS_PATH);
 	}
+	menu(clientsd);
 }
