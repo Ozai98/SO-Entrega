@@ -7,8 +7,7 @@
 #include <strings.h>
 #include <unistd.h>
 #define BACKLOG 2
-#define PORT 3547
-#define MESSAGESIZE 22
+#define PORT 3544
 
 // struct sockadd_in{
 //   short sin_family; //  AF_INET
@@ -28,6 +27,7 @@
 void menu(int clientsd);
 void recvNewReg(int clientsd);
 void showReg(int clientsd);
+void recvDeleteReg(int clientsd);
 void showSearch(int clientsd);
 
 int hashTable[HASH_TABLE_SIZE];
@@ -69,6 +69,7 @@ int main(){
   // process or thread
   clientsd[0] = accept(serversd, (struct sockaddr*)&client[0], (socklen_t*)&clientSize);
   if(clientsd[0] == -1){
+		printf("%i\n", clientsd[0]);
     perror("Accept error\n");
     exit(-1);
   }
@@ -97,7 +98,7 @@ void menu(int clientsd){
 			break;
 		case 3:
 			printf("Borrar registro\n");
-			// deleteReg();
+			recvDeleteReg(clientsd);
 			break;
 		case 4:
 			printf("Buscar registro\n");
@@ -203,6 +204,64 @@ void showReg(int clientsd){
 	menu(clientsd);
 }
 
+void recvDeleteReg(int clientsd){
+	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
+	fseek(dataDogs, 0, SEEK_END);
+	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
+	rewind(dataDogs);
+
+  int r = send(clientsd, &totalSize, sizeof(int), 0);
+  if(r == -1){
+    perror("Send error\n");
+    exit(-1);
+  }
+
+  int numReg;
+  r = recv(clientsd, &numReg, sizeof(int), 0);
+  if(r != sizeof(int)){
+    perror("Recv error");
+    exit(-1);
+  }
+	printf("numReg: %i\n", numReg);
+
+
+	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
+	int i=0;
+	int filePointer;
+  struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
+	for(i=0; i<totalSize; i++){
+		//Copia todos los registros en el archivo nuevo
+		filePointer = ftell(dataDogs);
+		// printf("%i\n", filePointer);
+		fread(currDog, sizeof(struct dogType), 1, dataDogs);
+		// showFullDogType(currDog);
+		if(filePointer == numReg*sizeof(struct dogType)){
+			printf("Registro a eliminar:\n");
+			showFullDogType(currDog);
+			r = send(clientsd, &currDog, sizeof(struct dogType), 0);
+			if(r == -1){
+			  perror("Send error\n");
+			  exit(-1);
+			}
+			continue;
+		}
+		currDog->next = 0;
+		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
+	}
+  free(currDog);
+	printf("%s\n", "Eliminación exitosa... espere por favor");
+
+	checkfclose(dataDogs, DATA_DOGS_PATH);
+	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
+	remove(DATA_DOGS_PATH);
+	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
+	htInit(hashTable);
+	htLoad(hashTable);
+
+  printf("Borrado de registro exitosa\n");
+	menu(clientsd);
+}
+
 void showSearch(int clientsd){
 	char name[NAME_SIZE];
   int r = recv(clientsd, name, NAME_SIZE, 0);
@@ -221,62 +280,65 @@ void showSearch(int clientsd){
   for(j = 0; j<strlen(nameAux); j++)
     nameAux[j] = tolower(nameAux[j]);
   int code = htHashFunction(nameAux);
-  int next = 0;
 
-
-	r = send(clientsd, &hashTable[code], sizeof(int), 0);
+	int exists = hashTable[code] == -1 ? 0 : 1;
+	r = send(clientsd, &exists, sizeof(int), 0);
 	if(r == -1){
 		perror("Send error\n");
 		exit(-1);
 	}
 	printf("%s\n", name);
 
-  if(hashTable[code] == -1)
+  if(!exists){
 		printf("%s\n","Mascota no existe");
-	else{
-		// Siempre tendrá al menos un Valor
-		FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
-		struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
-
-		char dogNameAux[NAME_SIZE];
-		char nameAux[NAME_SIZE];
-		strcpy(nameAux, name);
-		for(i = 0; i<strlen(nameAux); i++){
-			nameAux[i] = tolower(nameAux[i]);
-		}
-		next = hashTable[htHashFunction(name)];
-		do{
-			printf("Entró al do\n");
-			fseek(dataDogs, next, SEEK_SET);
-			fread(newDog, sizeof(struct dogType), 1, dataDogs);
-			strcpy(dogNameAux, newDog->name);
-
-			for(i = 0; i<strlen(dogNameAux); i++){
-				dogNameAux[i] = tolower(dogNameAux[i]);
-			}
-			if(!strcmp(dogNameAux, nameAux)){
-				r = send(clientsd, newDog, sizeof(int), 0);
-				if(r == -1){
-					perror("Send error\n");
-					exit(-1);
-				}
-				if(success==0){
-					showDogTypeTableHead();
-					success = 1;
-				}
-			}
-			showDogTypeTable(newDog);
-			next = newDog->next;
-		}while(next != 0);
-		newDog = NULL;
-		r = send(clientsd, newDog, sizeof(int), 0);
-		if(r == -1){
-			perror("Send error\n");
-			exit(-1);
-		}
-
-		free(newDog);
-		checkfclose(dataDogs, DATA_DOGS_PATH);
+		menu(clientsd);
+		return;
 	}
+	// Siempre tendrá al menos un Valor
+	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
+	struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
+	char dogNameAux[NAME_SIZE];
+	int next = hashTable[code];
+	int hasDog = 0;
+	do{
+		printf("Entró al do\n");
+		fseek(dataDogs, next, SEEK_SET);
+		fread(newDog, sizeof(struct dogType), 1, dataDogs);
+		strcpy(dogNameAux, newDog->name);
+
+		for(i = 0; i<strlen(dogNameAux); i++){
+			dogNameAux[i] = tolower(dogNameAux[i]);
+		}
+		if(!strcmp(dogNameAux, nameAux)){
+			hasDog = 1;
+			if(success==0){
+				showDogTypeTableHead();
+				success = 1;
+				hasDog = 2;
+			}
+			r = send(clientsd, &hasDog, sizeof(int), 0);
+			if(r == -1){
+				perror("Send error\n");
+				exit(-1);
+			}
+			r = send(clientsd, newDog, sizeof(struct dogType), 0);
+			if(r == -1){
+				perror("Send error\n");
+				exit(-1);
+			}
+		}
+		showDogTypeTable(newDog);
+		next = newDog->next;
+	}while(next != 0);
+	hasDog = 0;
+	r = send(clientsd, &hasDog, sizeof(int), 0);
+	if(r == -1){
+		perror("Send error\n");
+		exit(-1);
+	}
+	printf("Busqueda exitosa");
+
+	free(newDog);
+	checkfclose(dataDogs, DATA_DOGS_PATH);
 	menu(clientsd);
 }

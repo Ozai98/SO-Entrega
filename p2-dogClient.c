@@ -17,16 +17,15 @@
 #include <string.h>
 #include <ctype.h>
 
-#define PORT 3547
-#define MESSAGESIZE 22
+#define PORT 3544
 
 
 //Declaración de las funciones
-void menu();
-void exeMenu();
+void menu(int sd);
+void exeMenu(int sd);
 void addReg(int sd);
 void seeReg(int sd);
-void deleteReg();
+void deleteReg(int sd);
 void searchReg(int sd);
 
 int main(int argc, char *argv[]){
@@ -106,7 +105,7 @@ void menu(int sd){
 			break;
 		case 3:
 			printf("Borrar registro\n");
-			// deleteReg();
+			deleteReg(sd);
 			break;
 		case 4:
 			printf("Buscar registro\n");
@@ -137,7 +136,6 @@ void exeMenu(int sd){
 	printf("\n");
 	menu(sd);
 }
-
 
 // Función que añade un registro a al archivo
 void addReg(int sd){
@@ -233,7 +231,6 @@ void addReg(int sd){
 	// printf("Registro añadido exitosamente.\n");
 	exeMenu(sd);
 }
-
 //	Función que permite ver un registro de dataDogs.dat
 void seeReg(int sd){
 	int numberReg;
@@ -273,71 +270,55 @@ void seeReg(int sd){
       showDogType(newDog);
       free(newDog);
       printf("Consulta de registro exitosa\n");
-
-			printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
-			scanf(" %c", &ans);
-			//Si la respuesta es afirmativa, abre la historia clinima
-			if(ans == 's' || ans == 'S'){
-				char file_name_2[12];
-				sprintf(file_name_2, "gedit %d.txt", (numberReg+1));
-				system(file_name_2);
-			}
-			//Si no, reejecuta el menu
 			exeMenu(sd);
 		}
 	}while (value == 0);
 }
-
 // //	Función que elimina un registro de datadogs.dat
-// void deleteReg(){
-// 	int i = 0;
-// 	int filePointer = 0;
-// 	int code = 0;
-// 	int delReg = 0;
-// 	int success = 0;
-//
-// 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
-// 	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
-// 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
-//
-// 	fseek(dataDogs, 0, SEEK_END);
-// 	int nStructures = ftell(dataDogs)/sizeof(struct dogType);
-// 	printf("El número de registros es de: %i\n",nStructures);
-// 	rewind(dataDogs);
-//
-// 	printf("%s\n", "Ingrese la posición del registro a eliminar");
-// 	scanf("%i", &delReg);
-// 	if(delReg < 1 || delReg > nStructures){
-// 		printf("%s\n", "El registro que desea eliminar no existe");
-// 		checkfclose(dataDogs, DATA_DOGS_PATH);
-// 		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
-// 	}else{
-// 		delReg-=1;
-// 		for(i; i<nStructures; i++){
-// 			//Copia todos los registros en el archivo nuevo
-// 			filePointer = ftell(dataDogs);
-// 			fread(currDog, sizeof(struct dogType), 1, dataDogs);
-// 			if(filePointer == delReg*sizeof(struct dogType)){
-// 				//Si encuentra el archivo a eliminar, lo elimina de la hash y salta la copia de este registro en el nuevo archivo
-// 				success = 1;
-// 				continue;
-// 			}
-// 			currDog->next = 0;
-// 			fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
-// 		}
-// 		printf("%s\n", "Eliminación exitosa... espere por favor");
-//
-// 		checkfclose(dataDogs, DATA_DOGS_PATH);
-// 		checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
-// 		remove(DATA_DOGS_PATH);
-// 		rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
-// 		htInit(hashTable);
-// 		htLoad(hashTable);
-// 	}
-// 	free(currDog);
-// 	exeMenu();
-// }
+void deleteReg(int sd){
+  int totalSize;
+  int value = 0;
 
+	int i = 0;
+	int filePointer = 0;
+	int code = 0;
+	int delReg = 0;
+	int success = 0;
+
+  int r = recv( sd, &totalSize, sizeof(int), 0);
+  if(r != sizeof(int)){
+    perror("Recv error");
+    exit(-1);
+  }
+  printf("El número de registros es de: %i\n",totalSize);
+
+  do{
+    printf("%s\n", "Ingrese la posición del registro a eliminar");
+  	scanf("%i", &delReg);
+  	if(delReg < 1 || delReg > totalSize){
+  		printf("%s\n", "El registro que desea eliminar no existe");
+  	}else{
+      value = 1;
+  		delReg-=1;
+      r = send(sd, &delReg, sizeof(int), 0);
+      if(r == -1){
+        perror("Send error\n");
+        exit(-1);
+      }
+
+      struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
+      r = recv(sd, currDog, sizeof(struct dogType), 0);
+      if(r != sizeof(struct dogType)){
+        perror("Recv error");
+        exit(-1);
+      }
+      showDogType(currDog);
+      free(currDog);
+  		printf("%s\n", "Eliminación exitosa... espere por favor");
+  	}
+  }while(value == 0);
+	exeMenu(sd);
+}
 //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
 void searchReg(int sd){
 	char petName[NAME_SIZE];
@@ -351,6 +332,7 @@ void searchReg(int sd){
     perror("Send error\n");
     exit(-1);
   }
+
   int exists = 0;
   r = recv(sd, &exists, sizeof(int), 0);
   if(r != sizeof(int)){
@@ -358,25 +340,38 @@ void searchReg(int sd){
     exit(-1);
   }
   printf("exists: %i\n", exists);
-  if(exists == -1){
+  if(!exists){
 		printf("%s\n", "Este registro no existe");
     exeMenu(sd);
     return;
   }
-  int success = 0;
+
+  int hasDog = 0;
   struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
   do{
-    r = recv(sd, newDog, sizeof(struct dogType), 0);
-    if(r != sizeof(struct dogType)){
+    r = recv(sd, &hasDog, sizeof(int), 0);
+    if(r != sizeof(int)){
       perror("Recv error");
       exit(-1);
     }
-		if(success==0){
-			showDogTypeTableHead();
-			success = 1;
-		}
-    showDogTypeTable(newDog);
-  }while(newDog != NULL);
+    if (hasDog){
+      exists = 1;
+      if (hasDog == 2)
+        showDogTypeTableHead();
+
+      r = recv(sd, newDog, sizeof(struct dogType), 0);
+      if(r != sizeof(struct dogType)){
+        perror("Recv error");
+        exit(-1);
+      }
+      showDogTypeTable(newDog);
+    }
+  }while(hasDog);
+
+  if(!exists){
+		printf("%s\n", "Este registro no existe");
+  }
+
   printf("%s\n", "Busqueda exitosa");
   free(newDog);
 	exeMenu(sd);
