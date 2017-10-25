@@ -2,14 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
-// exeMenu
-#include <termios.h>
-#include <stdio_ext.h>
 //Constantes de tamaño
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
 #define BREED_SIZE 16
+// #define STRUCTURES_NUMBER 10000
 #define STRUCTURES_NUMBER 1e+7
 #define HASH_TABLE_SIZE 2500
 //Constantes de nombre de archivo
@@ -29,6 +26,7 @@ struct dogType{
 	unsigned short height;
 	float weight;
 	char gender;
+	int next;
 };
 
 //Función que imprime una estructura mascota
@@ -42,6 +40,19 @@ void showDogType(void *p){
 	printf("Altura:\t%hu\n",dog->height);
   printf("Peso:\t%2.2f\n",dog->weight);
 	printf("Genero:\t%c\n",dog->gender);
+}
+//Función que imprime una estructura mascota
+void showFullDogType(void *p){
+	struct dogType *dog = p;
+  printf("Id:\t%u\n",dog->id);
+  printf("Nombre:\t%s\n",dog->name);
+  printf("Tipo:\t%s\n",dog->type);
+  printf("Raza:\t%s\n",dog->breed);
+	printf("Edad:\t%hu\n",dog->age);
+	printf("Altura:\t%hu\n",dog->height);
+  printf("Peso:\t%2.2f\n",dog->weight);
+	printf("Genero:\t%c\n",dog->gender);
+	printf("Next:\t%i\n",dog->next);
 }
 
 //Función que imprime la cabecera de la tabla que muestra los nombres que coinciden con el campo introducido en la función de busqueda de un registro
@@ -69,6 +80,7 @@ void showDogTypeTable(void* p){
 		strcat(auxBreed, tab);
 
 	printf("%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\n",dog->id, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed);
+	// printf("%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\t%i\n",dog->id, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed, dog->next);
 }
 //Funcion que abre un archivo y captura errores
 FILE* checkfopen(const char *path, const char *mode){
