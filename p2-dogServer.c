@@ -6,8 +6,12 @@
 #include <arpa/inet.h>
 #include <strings.h>
 #include <unistd.h>
+
+#include <pthread.h>
+
 #define BACKLOG 2
-#define PORT 3544
+#define PORT 3547
+#define NUM_THREADS 32
 
 // struct sockadd_in{
 //   short sin_family; //  AF_INET
@@ -24,18 +28,25 @@
 //  little endian
 // htons(3535);
 
-void menu(int clientsd);
-void recvNewReg(int clientsd);
-void showReg(int clientsd);
-void recvDeleteReg(int clientsd);
-void showSearch(int clientsd);
+struct threadArgs{
+	int clientsd;
+	int id;
+};
+
+void *menu(void *ptr);
+void recvNewReg(void *ptr);
+void showReg(void *ptr);
+void recvDeleteReg(void *ptr);
+void showSearch(void *ptr);
 
 int hashTable[HASH_TABLE_SIZE];
 int main(){
 	htInit(hashTable);
 	htLoad(hashTable);
 
-  int serversd, clientsd[32];
+  struct threadArgs* args[NUM_THREADS];
+
+  int serversd;
   struct sockaddr_in server, client[32];
   socklen_t clientSize;
   int serverSize, r;
@@ -45,6 +56,7 @@ int main(){
     perror("Socket error\n");
     exit(-1);
   }
+  pthread_t threads[NUM_THREADS];
 
   // Assigning a name to a socket
   server.sin_family = AF_INET;
@@ -65,21 +77,36 @@ int main(){
     perror("Listen error\n");
     exit(-1);
   }
+	int i=0;
+	for(i = 0; i < NUM_THREADS; i++){
+	  // process or thread
+		args[i] = (struct threadArgs*)malloc(sizeof(struct threadArgs));
+    args[i]->id = i;
+	  args[i]->clientsd = accept(serversd, (struct sockaddr*)&client[i], (socklen_t*)&clientSize);
+	  if(args[i]->clientsd == -1){
+	    perror("Accept error\n");
+	    exit(-1);
+	  }
+    r = pthread_create(&threads[i], NULL, menu, (void*)args[i]);
+    if(r != 0){
+      perror("pthread_create error");
+      exit(-1);
+    }
+	}
 
-  // process or thread
-  clientsd[0] = accept(serversd, (struct sockaddr*)&client[0], (socklen_t*)&clientSize);
-  if(clientsd[0] == -1){
-		printf("%i\n", clientsd[0]);
-    perror("Accept error\n");
-    exit(-1);
-  }
-
-	menu(clientsd[0]);
-
-  close(clientsd[0]);
+	for(i = 0; i<NUM_THREADS; i++){
+    r = pthread_join(threads[i], NULL);
+    if(r != 0){
+        perror("pthread_join error");
+        exit(-1);
+    }
+		close(args[i]->clientsd);
+	}
   close(serversd);
 }
-void menu(int clientsd){
+void *menu(void* ptr){
+	struct threadArgs* args = ptr;
+	int clientsd = args->clientsd;
   int option;
   int r = recv(clientsd, &option, sizeof(int), 0);
   if(r != sizeof(int)){
@@ -90,19 +117,19 @@ void menu(int clientsd){
   switch (option) {
 		case 1:
 			printf("Ingresar registro\n");
-			recvNewReg(clientsd);
+			recvNewReg(args);
 			break;
 		case 2:
 			printf("Ver registro\n");
-			showReg(clientsd);
+			showReg(args);
 			break;
 		case 3:
 			printf("Borrar registro\n");
-			recvDeleteReg(clientsd);
+			recvDeleteReg(args);
 			break;
 		case 4:
 			printf("Buscar registro\n");
-      showSearch(clientsd);
+      showSearch(args);
 			break;
 		case 5:
 			printf("Salir\n");
@@ -113,7 +140,9 @@ void menu(int clientsd){
 	}
 }
 
-void recvNewReg(int clientsd){
+void recvNewReg(void *ptr){
+	struct threadArgs *args = ptr;
+	int clientsd = args->clientsd;
   int j;
   struct dogType *newDog = (struct dogType*) malloc(sizeof(struct dogType));
   int r = recv(clientsd, newDog, sizeof(struct dogType), 0);
@@ -170,10 +199,12 @@ void recvNewReg(int clientsd){
 
 	checkfclose(fptr, DATA_DOGS_PATH);
 	printf("Registro añadido exitosamente.\n");
-	menu(clientsd);
+	menu(args);
 }
 
-void showReg(int clientsd){
+void showReg(void *ptr){
+	struct threadArgs *args = ptr;
+	int clientsd = args->clientsd;
 	FILE* fptr = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(fptr, 0, SEEK_END);
 	int totalSize = ftell(fptr) / (sizeof(struct dogType));
@@ -201,10 +232,12 @@ void showReg(int clientsd){
   free(newDog);
   checkfclose(fptr, DATA_DOGS_PATH);
   printf("Consulta de registro exitosa\n");
-	menu(clientsd);
+	menu(args);
 }
 
-void recvDeleteReg(int clientsd){
+void recvDeleteReg(void *ptr){
+	struct threadArgs *args = ptr;
+	int clientsd = args->clientsd;
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
 	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
@@ -259,10 +292,12 @@ void recvDeleteReg(int clientsd){
 	htLoad(hashTable);
 
   printf("Borrado de registro exitosa\n");
-	menu(clientsd);
+	menu(args);
 }
 
-void showSearch(int clientsd){
+void showSearch(void *ptr){
+	struct threadArgs *args = ptr;
+	int clientsd = args->clientsd;
 	char name[NAME_SIZE];
   int r = recv(clientsd, name, NAME_SIZE, 0);
   if(r != NAME_SIZE){
@@ -291,7 +326,7 @@ void showSearch(int clientsd){
 
   if(!exists){
 		printf("%s\n","Mascota no existe");
-		menu(clientsd);
+		menu(args);
 		return;
 	}
 	// Siempre tendrá al menos un Valor
@@ -340,5 +375,5 @@ void showSearch(int clientsd){
 
 	free(newDog);
 	checkfclose(dataDogs, DATA_DOGS_PATH);
-	menu(clientsd);
+	menu(args);
 }

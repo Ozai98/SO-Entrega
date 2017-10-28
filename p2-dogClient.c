@@ -17,7 +17,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define PORT 3544
+#define PORT 3547
 
 
 //Declaración de las funciones
