@@ -4,7 +4,7 @@
 
 //Declaración de las funciones
 void txttoDat();
-char* getRandomName(void* p);
+void getRandomName(void* p, char* selectedName);
 int hashTable[HASH_TABLE_SIZE];
 
 void printDataDogs(){
@@ -25,29 +25,32 @@ void txttoDat(){
   FILE* fNombresMascotas = checkfopen(NOMBRES_MASCOTAS_PATH, "r");
   FILE* fPetNames = checkfopen(PET_NAMES_PATH, "w");
   char name[NAME_SIZE];
+  bzero(name, NAME_SIZE);
   while(fgets(name,NAME_SIZE,fNombresMascotas)){
     name[strlen(name)-1]=0;
     fwrite(name, NAME_SIZE, 1, fPetNames);
+    bzero(name, NAME_SIZE);
   }
   checkfclose(fPetNames, PET_NAMES_PATH);
   checkfclose(fNombresMascotas, NOMBRES_MASCOTAS_PATH);
 }
 
 //Función que obtiene un nombre aleatorio de la lista proveída
-char* getRandomName(void* p){
+void getRandomName(void* p, char* selectedName){
   FILE* fptr = p;
-  char* selectedName = (char*)malloc(sizeof(char)*NAME_SIZE);
+  // char* selectedName = (char*)malloc(sizeof(char)*NAME_SIZE);
   int number = (rand() % 1716) *32;
   fseek(fptr, number, SEEK_SET);
   fread(selectedName, 1, NAME_SIZE, fptr);
-  return selectedName;
+  // return selectedName;
 }
 
 int main(){
   txttoDat();
   htInit(hashTable);
   srand(time(NULL));
-  int i = 0, j = 0, id = 1, typeIdx = 0, currPos, currHash;
+  int i = 0, j = 0, id = 1, typeIdx = 0, currPos, number;
+  unsigned long currHash;
   // generar .dat
   // TODO: Crear mas tipos y razashashTable
   char* type[4]={"Perro","Gato","Roedor","Reptiles"};
@@ -65,9 +68,13 @@ int main(){
   struct dogType* prevDog = malloc(sizeof(struct dogType));
   for(i=0; i<STRUCTURES_NUMBER; i++, id++){
     newDog->id = id;
-    strcpy(newDog->name, getRandomName(fPetNames));
+    number = (i % 1716) *32;
+    fseek(fPetNames, number, SEEK_SET);
+    fread(newDog->name, 1, NAME_SIZE, fPetNames);
     typeIdx = rand()%4;
+    bzero(newDog->type, TYPE_SIZE);
     strcpy(newDog->type, type[typeIdx]);
+    bzero(newDog->breed, BREED_SIZE);
     strcpy(newDog->breed, breed[typeIdx][rand()%3]);
     newDog->age = rand()%20;
     newDog->height = rand()%100;
@@ -76,22 +83,14 @@ int main(){
     newDog->next = 0;
 
     currPos = (int)ftell(fDataDogs);
-
-    //poner en minusculas newdog name
-    char nameAux[NAME_SIZE];
-    strcpy(nameAux, newDog->name);
-    for(j = 0; j<strlen(nameAux); j++)
-      nameAux[j] = tolower(nameAux[j]);
-    currHash = htHashFunction(nameAux);
-
+    currHash = htHashFunction(newDog->name);
     if(hashTable[currHash] != -1){
-      // fseek(fDataDogs, hashTable[currHash], SEEK_SET);
-      // fread(prevDog, sizeof(struct dogType), 1, fDataDogs);
-      // prevDog->next = currPos;
+      // the next atribute is the first in the struct
       fseek(fDataDogs, hashTable[currHash], SEEK_SET);
       fwrite(&currPos, sizeof(int) , 1, fDataDogs);
       fseek(fDataDogs, 0, SEEK_END);
     }
+
     hashTable[currHash] = currPos;
     fwrite(newDog, sizeof(struct dogType) , 1, fDataDogs);
   }

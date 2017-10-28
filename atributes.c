@@ -6,8 +6,8 @@
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
 #define BREED_SIZE 16
-// #define STRUCTURES_NUMBER 10000
-#define STRUCTURES_NUMBER 1e+7
+#define STRUCTURES_NUMBER 100000
+// #define STRUCTURES_NUMBER 1e+7
 #define HASH_TABLE_SIZE 2500
 //Constantes de nombre de archivo
 #define NOMBRES_MASCOTAS_PATH "nombresMascotas.txt"

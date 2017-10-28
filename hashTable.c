@@ -16,6 +16,18 @@ int htHashFunction(char* str){
 	}
 	return sum;
 }
+// unsigned long htHashFunction(char *str){
+//   unsigned long c, hash = 5381;
+// 	int i;
+//   for(i=0; i<strlen(str); i++){
+// 		c = tolower(*str++);
+//     hash = (hash << 5) + hash + c; /* hash * 33 + c */
+// 	}
+//   return hash%HASH_TABLE_SIZE;
+// }
+
+
+
 //Carga la hashTable con los registros de dataDogs.dat
 void htLoad(int* hashTable){
 	htInit(hashTable);
