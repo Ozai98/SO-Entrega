@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
+#include <time.h>
+#include <stdlib.h>
 // #include <unistd.h>
 // #include "hashTable.c"
 // #include <ctype.h>
@@ -18,14 +20,14 @@
 //     return EOF;     /* error on tcsetattr */
 //   }
 //   int c;
-//   printf("Ingrese cualquier tecla para continuar: ");
+//   printf("Ingrese cualqucheckfclose(serverLog, SERVER_LOG_PATH);ier tecla para continuar: ");
 //   c = getchar();
 //   printf("\nc: %c\n", c);
 //   /* restore the saved state */
 //   if (-1 == tcsetattr(STDIN_FILENO, TCSANOW, &savedState)){
 //     return EOF;     /* error on tcsetattr */
 //   }
-//   return c;
+//   return c;printf
 // }
 // void func(){
 //   static struct termios newt, oldt;
@@ -39,6 +41,14 @@
 // 	__fpurge(stdin);			//Limpiando el buffer de entrada
 // 	tcsetattr( STDIN_FILENO, TCSANOW, &oldt);//Configurando la terminal a su forma original
 // }
+
+char* timeAndDate(){
+	time_t t = time(NULL);
+struct tm tm = *localtime(&t);
+char* date = (char*)malloc(100* sizeof(char));
+sprintf(date,"%d-%d-%d %d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+return date;
+}
 void func2();
 void func3();
 int hashTable[5];
@@ -47,7 +57,8 @@ int main(){
   func3();
   func2();
   func3();
-
+  char* lol = timeAndDate();
+  printf("%s\n", lol);
   // int impar = 24 & 1;
 
   // char echo = 50;

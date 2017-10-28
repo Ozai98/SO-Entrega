@@ -10,7 +10,8 @@
 #include <pthread.h>
 
 #define BACKLOG 2
-#define PORT 3547
+#define PORT 3535
+#define SERVER_LOG_PATH "ServerDogs.log"
 #define NUM_THREADS 32
 
 // struct sockadd_in{
@@ -50,6 +51,7 @@ int main(){
   struct sockaddr_in server, client[32];
   socklen_t clientSize;
   int serverSize, r;
+	int optval;
 
   serversd = socket(AF_INET, SOCK_STREAM, 0);
   if(serversd == -1){
@@ -65,6 +67,10 @@ int main(){
   bzero(server.sin_zero, 8);
 
   serverSize = sizeof(struct sockaddr);
+	optval = 1;
+
+	if (setsockopt(serversd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval)) < 0)
+        perror("setsockopt(SO_REUSEADDR) failed");
 
   r = bind(serversd, (struct sockaddr*)&server, serverSize);
   if(r == -1){
@@ -102,7 +108,18 @@ int main(){
     }
 		close(args[i]->clientsd);
 	}
+  // process or thread
+  clientsd[0] = accept(serversd, (struct sockaddr*)&client[0], (socklen_t*)&clientSize);
+  if(clientsd[0] == -1){
+		printf("%i\n", clientsd[0]);
+    perror("Accept error\n");
+    exit(-1);
+  }
+	menu(clientsd[0]);
+
+  close(clientsd[0]);
   close(serversd);
+
 }
 void *menu(void* ptr){
 	struct threadArgs* args = ptr;
@@ -140,10 +157,34 @@ void *menu(void* ptr){
 	}
 }
 
+char* timeAndDate(){
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	char* date = (char*)malloc(100* sizeof(char));
+	sprintf(date,"%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	return date;
+	free(date);
+}
+
+void generateLog(char* opType, char* registry, char* searchedString){
+	char serverLogString[300];
+	char* currentDate = timeAndDate();
+	char* ip = "127.0.0.1] ";
+	FILE* serverLog = checkfopen(SERVER_LOG_PATH, "w+");
+	snprintf(serverLogString, sizeof(serverLogString), "%s%s%s%s%s%s%s", "[Fecha: ", currentDate, "[Cliente: ", ip, opType, registry, searchedString);
+	printf("%s\n", serverLogString);
+	fseek(serverLog,0, SEEK_END);
+	fwrite(serverLogString, sizeof(serverLogString), 1, serverLog);
+	checkfclose(serverLog, SERVER_LOG_PATH);
+}
+
+void recvNewReg(int clientsd){
 void recvNewReg(void *ptr){
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
   int j;
+	char registry[10];
+	bzero(registry, (int)sizeof(registry));
   struct dogType *newDog = (struct dogType*) malloc(sizeof(struct dogType));
   int r = recv(clientsd, newDog, sizeof(struct dogType), 0);
   if(r != sizeof(struct dogType)){
@@ -159,7 +200,6 @@ void recvNewReg(void *ptr){
 	rewind(fptc);
 	fwrite(&id, sizeof(int), 1, fptc);
 	checkfclose(fptc, CURRENT_ID_PATH);
-
   showFullDogType(newDog);
   //Cambia el next de la estructura anterior del mismo nombre
   //poner en minusculas name
@@ -193,12 +233,14 @@ void recvNewReg(void *ptr){
 	//Añade la estructura a la hashTable y a dataDogs.dat
 	fseek(fptr, 0, SEEK_END);
 	fwrite(newDog, sizeof(struct dogType), 1, fptr);
-
+	sprintf(registry, "[Registro: %u", newDog->id);
   free(newDog);
   free(currDog);
 
 	checkfclose(fptr, DATA_DOGS_PATH);
 	printf("Registro añadido exitosamente.\n");
+	generateLog("[Operación: Inserción] ", registry, " Sin cadena de busqueda]");
+	menu(clientsd);
 	menu(args);
 }
 
@@ -206,6 +248,10 @@ void showReg(void *ptr){
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
 	FILE* fptr = checkfopen(DATA_DOGS_PATH, "r");
+	char registryString [10];
+	char searchedRegistry[10];
+	bzero(registryString, (int)sizeof(registryString));
+	bzero(searchedRegistry, (int)sizeof(searchedRegistry));
 	fseek(fptr, 0, SEEK_END);
 	int totalSize = ftell(fptr) / (sizeof(struct dogType));
   int r = send(clientsd, &totalSize, sizeof(int), 0);
@@ -223,6 +269,7 @@ void showReg(void *ptr){
   struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
   fseek(fptr, numReg*sizeof(struct dogType), SEEK_SET);
   fread(newDog, sizeof(struct dogType), 1, fptr);
+	showDogType(newDog);
   r = send(clientsd, newDog, sizeof(struct dogType), 0);
   if(r == -1){
     perror("Send error\n");
@@ -232,12 +279,21 @@ void showReg(void *ptr){
   free(newDog);
   checkfclose(fptr, DATA_DOGS_PATH);
   printf("Consulta de registro exitosa\n");
+	sprintf(registryString, "[Registro: %d ", numReg);
+	sprintf(searchedRegistry, "Cadena de busqueda: %d]", newDog->id);
+	generateLog("[Operación: Lectura] ", registryString, searchedRegistry);
+	menu(clientsd);
 	menu(args);
 }
 
 void recvDeleteReg(void *ptr){
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
+void recvDeleteReg(int clientsd){
+	char selectedDog [40];
+	char askedDog[10];
+	bzero(selectedDog, (int)sizeof(selectedDog));
+	bzero(askedDog, (int)sizeof(askedDog));
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
 	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
@@ -270,6 +326,7 @@ void recvDeleteReg(void *ptr){
 		// showFullDogType(currDog);
 		if(filePointer == numReg*sizeof(struct dogType)){
 			printf("Registro a eliminar:\n");
+			sprintf(askedDog, "[Registro: %d", currDog->id);
 			showFullDogType(currDog);
 			r = send(clientsd, &currDog, sizeof(struct dogType), 0);
 			if(r == -1){
@@ -281,6 +338,8 @@ void recvDeleteReg(void *ptr){
 		currDog->next = 0;
 		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
 	}
+
+	sprintf(selectedDog, " Cadena de busqueda: %d]", numReg);
   free(currDog);
 	printf("%s\n", "Eliminación exitosa... espere por favor");
 
@@ -292,6 +351,8 @@ void recvDeleteReg(void *ptr){
 	htLoad(hashTable);
 
   printf("Borrado de registro exitosa\n");
+	generateLog("[Operación: Eliminación] ", askedDog, selectedDog);
+	menu(clientsd);
 	menu(args);
 }
 
@@ -336,7 +397,6 @@ void showSearch(void *ptr){
 	int next = hashTable[code];
 	int hasDog = 0;
 	do{
-		printf("Entró al do\n");
 		fseek(dataDogs, next, SEEK_SET);
 		fread(newDog, sizeof(struct dogType), 1, dataDogs);
 		strcpy(dogNameAux, newDog->name);
@@ -372,6 +432,9 @@ void showSearch(void *ptr){
 		exit(-1);
 	}
 	printf("Busqueda exitosa");
+	char* nameformated;
+	sprintf(nameformated, "%s]", name);
+	generateLog("Busqueda", "[Registro: Múltiples", nameformated);
 
 	free(newDog);
 	checkfclose(dataDogs, DATA_DOGS_PATH);

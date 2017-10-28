@@ -17,7 +17,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define PORT 3547
+#define PORT 3535
 
 
 //Declaración de las funciones
@@ -30,6 +30,7 @@ void searchReg(int sd);
 
 int main(int argc, char *argv[]){
   int sd = socket(AF_INET, SOCK_STREAM, 0);
+  int optval;
   if(sd == -1){
     perror("Socket error\n");
     exit(-1);
@@ -44,6 +45,9 @@ int main(int argc, char *argv[]){
   bzero(server.sin_zero, 8);
 
   serverSize = sizeof(struct sockaddr);
+  optval = 1;
+  if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval)) < 0)
+        perror("setsockopt(SO_REUSEADDR) failed");
 
   int r = connect(sd, (struct sockaddr*)&server, serverSize);
   if(r == -1){
