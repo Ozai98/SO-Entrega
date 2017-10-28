@@ -280,14 +280,7 @@ void seeReg(int sd){
 }
 // //	Función que elimina un registro de datadogs.dat
 void deleteReg(int sd){
-  int totalSize;
-  int value = 0;
-
-	int i = 0;
-	int filePointer = 0;
-	int code = 0;
-	int delReg = 0;
-	int success = 0;
+  int totalSize, value = 0, i = 0, filePointer = 0, code = 0, delReg = 0, success = 0;
 
   int r = recv( sd, &totalSize, sizeof(int), 0);
   if(r != sizeof(int)){

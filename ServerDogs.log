@@ -1,6 +1,0 @@
-[Fecha: 2017-10-27 22:51:52] ] [Cliente: 127.0.0.1] [Operacion: Inserción] [Registro: 10000011] [Cadena buscada: Sin cadena de busqueda]
-[Fecha: 2017-10-27 22:52:32] ] [Cliente: 127.0.0.1] [Operacion: Lectura] [Registro: 150] [Cadena buscada: -1207959432]
-[Fecha: 2017-10-27 22:56:50] ] [Cliente: 127.0.0.1] [Operacion: Lectura] [Registro: 150] [Cadena buscada: 150]
-[Fecha: 2017-10-27 22:57:43] ] [Cliente: 127.0.0.1] [Operacion: Eliminación] [Registro: 8950] [Cadena buscada: 8949]
-[Fecha: 2017-10-27 23:13:59] ] [Cliente: 127.0.0.1] [Operacion: Busqueda] [Registro: No encontrado] [Cadena buscada: Rom]
-[Fecha: 2017-10-27 23:14:58] ] [Cliente: 127.0.0.1] [Operacion: Busqueda] [Registro: No encontrado] [Cadena buscada: 1]

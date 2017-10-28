@@ -18,6 +18,7 @@
 
 //Declaración de la estructura
 struct dogType{
+	int next;
 	unsigned int id;
 	char name[NAME_SIZE];
 	char type[TYPE_SIZE];
@@ -26,7 +27,6 @@ struct dogType{
 	unsigned short height;
 	float weight;
 	char gender;
-	int next;
 };
 
 //Función que imprime una estructura mascota

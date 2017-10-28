@@ -18,41 +18,33 @@ int htHashFunction(char* str){
 }
 //Carga la hashTable con los registros de dataDogs.dat
 void htLoad(int* hashTable){
-	htInit(auxHashTable);
-	int i = 0, j = 0, code = 0, filePointer = 0, count = 0, auxHashTable[HASH_TABLE_SIZE];
+	htInit(hashTable);
+	int i = 0, j = 0, code = 0, filePointer = 0, count = 0;
+	char nameAux[NAME_SIZE];
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
-  struct dogType* prevDog = malloc(sizeof(struct dogType));
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
 	int nStructures = ftell(dataDogs)/sizeof(struct dogType);
 	rewind(dataDogs);
+
 	for(i=0; i<nStructures; i++){
 		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
 
     //poner en minusculas currDog name
-    char nameAux[NAME_SIZE];
     strcpy(nameAux, currDog->name);
     for(j = 0; j<strlen(nameAux); j++)
       nameAux[j] = tolower(nameAux[j]);
 		code = htHashFunction(nameAux);
 
-		if(auxHashTable[code] == -1){
+		if(hashTable[code] == -1){
 			count++;
 			hashTable[code] = filePointer;
-		}else{
-      fseek(dataDogs, auxHashTable[code], SEEK_SET);
-      fread(prevDog, sizeof(struct dogType), 1, dataDogs);
-      prevDog->next = filePointer;
-      fseek(dataDogs, hashTable[code], SEEK_SET);
-      fwrite(prevDog, sizeof(struct dogType) , 1, dataDogs);
 		}
-		auxHashTable[code] = filePointer;
 	}
 	printf("count: %i\n", count);
-	checkfclose(dataDogs, DATA_DOGS_PATH);
 	free(currDog);
-	free(prevDog);
+	checkfclose(dataDogs, DATA_DOGS_PATH);
 }
 //Imprime todos los valores de la hashTable
 void htPrintAll(int* hashTable){

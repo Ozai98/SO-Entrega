@@ -34,12 +34,15 @@ struct threadArgs{
 	int id;
 };
 
+
 int hashTable[HASH_TABLE_SIZE];
 void *menu(void *ptr);
 void recvNewReg(void *ptr);
 void showReg(void *ptr);
 void recvDeleteReg(void *ptr);
 void showSearch(void *ptr);
+void redoNext();
+
 
 int main(){
 	struct threadArgs* args[NUM_THREADS];
@@ -171,7 +174,6 @@ void generateLog(char* opType, char* ip, char* registry, char* searchedString){
 	checkfclose(serverLog, SERVER_LOG_PATH);
 }
 
-
 void recvNewReg(void *ptr){
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
@@ -279,56 +281,52 @@ void showReg(void *ptr){
 
 void recvDeleteReg(void *ptr){
 	struct threadArgs *args = ptr;
-	int clientsd = args->clientsd;
-	char selectedDog [40];
-	char askedDog[10];
-	bzero(selectedDog, (int)sizeof(selectedDog));
-	bzero(askedDog, (int)sizeof(askedDog));
+	int r, i=0, startId = 0, numReg, filePointer, clientsd = args->clientsd;
+	char consultedDog [10];
+	char returnedDog[10];
+	bzero(consultedDog, (int)sizeof(consultedDog));
+	bzero(returnedDog, (int)sizeof(returnedDog));
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
 	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
 	rewind(dataDogs);
 
-  int r = send(clientsd, &totalSize, sizeof(int), 0);
+  r = send(clientsd, &totalSize, sizeof(int), 0);
   if(r == -1){
     perror("Send error\n");
     exit(-1);
   }
 
-  int numReg;
   r = recv(clientsd, &numReg, sizeof(int), 0);
   if(r != sizeof(int)){
     perror("Recv error");
     exit(-1);
   }
 
-
 	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
-	int i=0;
-	int filePointer;
   struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
 	for(i=0; i<totalSize; i++){
 		//Copia todos los registros en el archivo nuevo
 		filePointer = ftell(dataDogs);
-		// printf("%i\n", filePointer);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
-		// showFullDogType(currDog);
 		if(filePointer == numReg*sizeof(struct dogType)){
+			startId = i;
 			printf("Registro a eliminar:\n");
-			sprintf(askedDog, "%d", currDog->id);
+			sprintf(returnedDog, "%d", currDog->id);
 			showFullDogType(currDog);
-			r = send(clientsd, &currDog, sizeof(struct dogType), 0);
+			r = send(clientsd, currDog, sizeof(struct dogType), 0);
 			if(r == -1){
 			  perror("Send error\n");
 			  exit(-1);
 			}
+			showFullDogType(currDog);
 			continue;
 		}
 		currDog->next = 0;
 		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
 	}
 
-	sprintf(selectedDog, "%d", numReg+1);
+	sprintf(consultedDog, "%d", numReg+1);
   free(currDog);
 	printf("%s\n", "Eliminación exitosa... espere por favor");
 
@@ -336,11 +334,10 @@ void recvDeleteReg(void *ptr){
 	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
 	remove(DATA_DOGS_PATH);
 	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
-	htInit(hashTable);
-	htLoad(hashTable);
+	redoNext();
 
   printf("Borrado de registro exitosa\n");
-	generateLog("Eliminación", args->ip, askedDog, selectedDog);
+	generateLog("Eliminación", args->ip, returnedDog, consultedDog);
 	menu(args);
 }
 
@@ -421,9 +418,18 @@ void showSearch(void *ptr){
 		exit(-1);
 	}
 	printf("Busqueda exitosa");
-	generateLog("Busqueda", args->ip, "Registro: Múltiples", name);
+	generateLog("Busqueda", args->ip, "Múltiples", name);
 
 	free(newDog);
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	menu(args);
+}
+
+void redoNext(){
+	int tempHashTable[HASH_TABLE_SIZE];
+  FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r+");
+  struct dogType* newDog = malloc(sizeof(struct dogType));
+	free(newDog);
+	checkfclose(dataDogs, DATA_DOGS_PATH);
+	htLoad(hashTable);
 }

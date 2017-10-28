@@ -63,8 +63,8 @@ int main(){
   FILE* fPetNames = checkfopen(PET_NAMES_PATH,"r");
   struct dogType* newDog = malloc(sizeof(struct dogType));
   struct dogType* prevDog = malloc(sizeof(struct dogType));
-  newDog->id = id;
   for(i=0; i<STRUCTURES_NUMBER; i++, id++){
+    newDog->id = id;
     strcpy(newDog->name, getRandomName(fPetNames));
     typeIdx = rand()%4;
     strcpy(newDog->type, type[typeIdx]);
@@ -85,11 +85,11 @@ int main(){
     currHash = htHashFunction(nameAux);
 
     if(hashTable[currHash] != -1){
+      // fseek(fDataDogs, hashTable[currHash], SEEK_SET);
+      // fread(prevDog, sizeof(struct dogType), 1, fDataDogs);
+      // prevDog->next = currPos;
       fseek(fDataDogs, hashTable[currHash], SEEK_SET);
-      fread(prevDog, sizeof(struct dogType), 1, fDataDogs);
-      prevDog->next = currPos;
-      fseek(fDataDogs, hashTable[currHash], SEEK_SET);
-      fwrite(prevDog, sizeof(struct dogType) , 1, fDataDogs);
+      fwrite(&currPos, sizeof(int) , 1, fDataDogs);
       fseek(fDataDogs, 0, SEEK_END);
     }
     hashTable[currHash] = currPos;
