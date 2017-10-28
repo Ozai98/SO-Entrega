@@ -5,6 +5,7 @@
 //Declaración de las funciones
 void txttoDat();
 char* getRandomName(void* p);
+int hashTable[HASH_TABLE_SIZE];
 
 void printDataDogs(){
   FILE* fDataDogs = checkfopen(DATA_DOGS_PATH, "r");
@@ -19,14 +20,35 @@ void printDataDogs(){
   checkfclose(fDataDogs,DATA_DOGS_PATH);
 }
 
-int hashTable[HASH_TABLE_SIZE];
-int main(){
-  int j=0;
-  htInit(hashTable);
-  // htPrintAll(hashTable);
-  // generar .dat
-  txttoDat();
+//Función que crea un .dat a partir del .txt de los nombres de mascotas
+void txttoDat(){
+  FILE* fNombresMascotas = checkfopen(NOMBRES_MASCOTAS_PATH, "r");
+  FILE* fPetNames = checkfopen(PET_NAMES_PATH, "w");
+  char name[NAME_SIZE];
+  while(fgets(name,NAME_SIZE,fNombresMascotas)){
+    name[strlen(name)-1]=0;
+    fwrite(name, NAME_SIZE, 1, fPetNames);
+  }
+  checkfclose(fPetNames, PET_NAMES_PATH);
+  checkfclose(fNombresMascotas, NOMBRES_MASCOTAS_PATH);
+}
 
+//Función que obtiene un nombre aleatorio de la lista proveída
+char* getRandomName(void* p){
+  FILE* fptr = p;
+  char* selectedName = (char*)malloc(sizeof(char)*NAME_SIZE);
+  int number = (rand() % 1716) *32;
+  fseek(fptr, number, SEEK_SET);
+  fread(selectedName, 1, NAME_SIZE, fptr);
+  return selectedName;
+}
+
+int main(){
+  txttoDat();
+  htInit(hashTable);
+  srand(time(NULL));
+  int i = 0, j = 0, id = 1, typeIdx = 0, currPos, currHash;
+  // generar .dat
   // TODO: Crear mas tipos y razashashTable
   char* type[4]={"Perro","Gato","Roedor","Reptiles"};
   char* breed[4][3] = {
@@ -37,16 +59,12 @@ int main(){
   };
   char gender[2] = {'H','M'};
 
-  srand(time(NULL));
   FILE* fDataDogs = checkfopen(DATA_DOGS_PATH, "w+");
-  unsigned int id = 1;
+  FILE* fPetNames = checkfopen(PET_NAMES_PATH,"r");
   struct dogType* newDog = malloc(sizeof(struct dogType));
   struct dogType* prevDog = malloc(sizeof(struct dogType));
-  FILE* fPetNames = checkfopen(PET_NAMES_PATH,"r");
-  int currPos, currHash;
-  int i = 0, typeIdx = 0;
+  newDog->id = id;
   for(i=0; i<STRUCTURES_NUMBER; i++, id++){
-    newDog->id = id;
     strcpy(newDog->name, getRandomName(fPetNames));
     typeIdx = rand()%4;
     strcpy(newDog->type, type[typeIdx]);
@@ -58,6 +76,7 @@ int main(){
     newDog->next = 0;
 
     currPos = (int)ftell(fDataDogs);
+
     //poner en minusculas newdog name
     char nameAux[NAME_SIZE];
     strcpy(nameAux, newDog->name);
@@ -85,28 +104,4 @@ int main(){
   fwrite(&id, sizeof(int), 1, fCurrentId);
   checkfclose(fCurrentId,CURRENT_ID_PATH);
   return 0;
-}
-
-
-//Función que crea un .dat a partir del .txt de los nombres de mascotas
-void txttoDat(){
-  FILE* fNombresMascotas = checkfopen(NOMBRES_MASCOTAS_PATH, "r");
-  FILE* fPetNames = checkfopen(PET_NAMES_PATH, "w");
-  char name[NAME_SIZE];
-  while(fgets(name,NAME_SIZE,fNombresMascotas)){
-    name[strlen(name)-1]=0;
-    fwrite(name, NAME_SIZE, 1, fPetNames);
-  }
-  checkfclose(fPetNames, PET_NAMES_PATH);
-  checkfclose(fNombresMascotas, NOMBRES_MASCOTAS_PATH);
-}
-
-//Función que obtiene un nombre aleatorio de la lista proveída
-char* getRandomName(void* p){
-  FILE* fptr = p;
-  char* selectedName = (char*)malloc(sizeof(char)*NAME_SIZE);
-  int number = (rand() % 1716) *32;
-  fseek(fptr, number, SEEK_SET);
-  fread(selectedName, 1, NAME_SIZE, fptr);
-  return selectedName;
 }

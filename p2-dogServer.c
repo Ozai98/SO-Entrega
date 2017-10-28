@@ -1,13 +1,12 @@
-#include "hashTable.c"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <strings.h>
-#include <unistd.h>
-
 #include <pthread.h>
+#include <strings.h>
+#include "hashTable.c"
 
 #define BACKLOG 2
 #define PORT 3535
@@ -31,96 +30,88 @@
 
 struct threadArgs{
 	int clientsd;
+	char ip[INET6_ADDRSTRLEN];
 	int id;
 };
 
+int hashTable[HASH_TABLE_SIZE];
 void *menu(void *ptr);
 void recvNewReg(void *ptr);
 void showReg(void *ptr);
 void recvDeleteReg(void *ptr);
 void showSearch(void *ptr);
 
-int hashTable[HASH_TABLE_SIZE];
 int main(){
+	struct threadArgs* args[NUM_THREADS];
+	int i, r, serversd, serverSize, optval;
+	socklen_t clientSize;
+	pthread_t threads[NUM_THREADS];
+	struct sockaddr_in server, client[32];
 	htInit(hashTable);
 	htLoad(hashTable);
+	serversd = socket(AF_INET, SOCK_STREAM, 0);
 
-  struct threadArgs* args[NUM_THREADS];
-
-  int serversd;
-  struct sockaddr_in server, client[32];
-  socklen_t clientSize;
-  int serverSize, r;
-	int optval;
-
-  serversd = socket(AF_INET, SOCK_STREAM, 0);
   if(serversd == -1){
     perror("Socket error\n");
     exit(-1);
   }
-  pthread_t threads[NUM_THREADS];
 
   // Assigning a name to a socket
   server.sin_family = AF_INET;
   server.sin_port = htons(PORT);
   server.sin_addr.s_addr = INADDR_ANY;
   bzero(server.sin_zero, 8);
-
-  serverSize = sizeof(struct sockaddr);
+	serverSize = sizeof(struct sockaddr);
 	optval = 1;
 
 	if (setsockopt(serversd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval)) < 0)
         perror("setsockopt(SO_REUSEADDR) failed");
 
   r = bind(serversd, (struct sockaddr*)&server, serverSize);
-  if(r == -1){
+
+	if(r == -1){
     perror("Bind error\n");
     exit(-1);
   }
 
   r = listen(serversd, BACKLOG);
-  if(r == -1){
+
+	if(r == -1){
     perror("Listen error\n");
     exit(-1);
   }
-	int i=0;
 	for(i = 0; i < NUM_THREADS; i++){
 	  // process or thread
 		args[i] = (struct threadArgs*)malloc(sizeof(struct threadArgs));
     args[i]->id = i;
 	  args[i]->clientsd = accept(serversd, (struct sockaddr*)&client[i], (socklen_t*)&clientSize);
+		bzero(args[i]->ip,sizeof(args[i]->ip));
+		inet_ntop(AF_INET, &client[i].sin_addr, args[i]->ip, sizeof args[i]->ip);
 	  if(args[i]->clientsd == -1){
 	    perror("Accept error\n");
 	    exit(-1);
 	  }
-    r = pthread_create(&threads[i], NULL, menu, (void*)args[i]);
-    if(r != 0){
+		r = pthread_create(&threads[i], NULL, menu, (void*)args[i]);
+
+		if(r != 0){
       perror("pthread_create error");
       exit(-1);
     }
 	}
 
 	for(i = 0; i<NUM_THREADS; i++){
-    r = pthread_join(threads[i], NULL);
-    if(r != 0){
+		r = pthread_join(threads[i], NULL);
+
+		if(r != 0){
         perror("pthread_join error");
         exit(-1);
     }
 		close(args[i]->clientsd);
+		free(args[i]);
 	}
-  // process or thread
-  clientsd[0] = accept(serversd, (struct sockaddr*)&client[0], (socklen_t*)&clientSize);
-  if(clientsd[0] == -1){
-		printf("%i\n", clientsd[0]);
-    perror("Accept error\n");
-    exit(-1);
-  }
-	menu(clientsd[0]);
-
-  close(clientsd[0]);
   close(serversd);
-
 }
+
 void *menu(void* ptr){
 	struct threadArgs* args = ptr;
 	int clientsd = args->clientsd;
@@ -157,28 +148,30 @@ void *menu(void* ptr){
 	}
 }
 
-char* timeAndDate(){
+char* timeAndDate(char* date){
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
-	char* date = (char*)malloc(100* sizeof(char));
 	sprintf(date,"%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	return date;
-	free(date);
 }
 
-void generateLog(char* opType, char* registry, char* searchedString){
+void generateLog(char* opType, char* ip, char* registry, char* searchedString){
+	int index = 300;
 	char serverLogString[300];
-	char* currentDate = timeAndDate();
-	char* ip = "127.0.0.1] ";
-	FILE* serverLog = checkfopen(SERVER_LOG_PATH, "w+");
-	snprintf(serverLogString, sizeof(serverLogString), "%s%s%s%s%s%s%s", "[Fecha: ", currentDate, "[Cliente: ", ip, opType, registry, searchedString);
+	char date[100];
+	char* currentDate = timeAndDate(date);
+	FILE* serverLog = checkfopen(SERVER_LOG_PATH, "a");
+	snprintf(serverLogString, sizeof(serverLogString), "[Fecha: %s] [Cliente: %s] [Operacion: %s] [Registro: %s] [Cadena buscada: %s]\n", currentDate, ip, opType, registry, searchedString);
 	printf("%s\n", serverLogString);
+	const char *ptr = strchr(serverLogString, '\n');
+	if(ptr)
+   index = ptr - serverLogString;
 	fseek(serverLog,0, SEEK_END);
-	fwrite(serverLogString, sizeof(serverLogString), 1, serverLog);
+	fwrite(serverLogString, 1, index+1, serverLog);
 	checkfclose(serverLog, SERVER_LOG_PATH);
 }
 
-void recvNewReg(int clientsd){
+
 void recvNewReg(void *ptr){
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
@@ -233,14 +226,13 @@ void recvNewReg(void *ptr){
 	//Añade la estructura a la hashTable y a dataDogs.dat
 	fseek(fptr, 0, SEEK_END);
 	fwrite(newDog, sizeof(struct dogType), 1, fptr);
-	sprintf(registry, "[Registro: %u", newDog->id);
+	sprintf(registry, "%u", newDog->id);
   free(newDog);
   free(currDog);
 
 	checkfclose(fptr, DATA_DOGS_PATH);
 	printf("Registro añadido exitosamente.\n");
-	generateLog("[Operación: Inserción] ", registry, " Sin cadena de busqueda]");
-	menu(clientsd);
+	generateLog("Inserción", args->ip, registry, "Sin cadena de busqueda");
 	menu(args);
 }
 
@@ -276,20 +268,18 @@ void showReg(void *ptr){
     exit(-1);
   }
   showFullDogType(newDog);
+	sprintf(searchedRegistry, "%i", newDog->id);
+	sprintf(registryString, "%d", numReg+1);
   free(newDog);
   checkfclose(fptr, DATA_DOGS_PATH);
   printf("Consulta de registro exitosa\n");
-	sprintf(registryString, "[Registro: %d ", numReg);
-	sprintf(searchedRegistry, "Cadena de busqueda: %d]", newDog->id);
-	generateLog("[Operación: Lectura] ", registryString, searchedRegistry);
-	menu(clientsd);
+	generateLog("Lectura", args->ip, registryString, searchedRegistry);
 	menu(args);
 }
 
 void recvDeleteReg(void *ptr){
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
-void recvDeleteReg(int clientsd){
 	char selectedDog [40];
 	char askedDog[10];
 	bzero(selectedDog, (int)sizeof(selectedDog));
@@ -311,7 +301,6 @@ void recvDeleteReg(int clientsd){
     perror("Recv error");
     exit(-1);
   }
-	printf("numReg: %i\n", numReg);
 
 
 	FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w");
@@ -326,7 +315,7 @@ void recvDeleteReg(int clientsd){
 		// showFullDogType(currDog);
 		if(filePointer == numReg*sizeof(struct dogType)){
 			printf("Registro a eliminar:\n");
-			sprintf(askedDog, "[Registro: %d", currDog->id);
+			sprintf(askedDog, "%d", currDog->id);
 			showFullDogType(currDog);
 			r = send(clientsd, &currDog, sizeof(struct dogType), 0);
 			if(r == -1){
@@ -339,7 +328,7 @@ void recvDeleteReg(int clientsd){
 		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
 	}
 
-	sprintf(selectedDog, " Cadena de busqueda: %d]", numReg);
+	sprintf(selectedDog, "%d", numReg+1);
   free(currDog);
 	printf("%s\n", "Eliminación exitosa... espere por favor");
 
@@ -351,8 +340,7 @@ void recvDeleteReg(int clientsd){
 	htLoad(hashTable);
 
   printf("Borrado de registro exitosa\n");
-	generateLog("[Operación: Eliminación] ", askedDog, selectedDog);
-	menu(clientsd);
+	generateLog("Eliminación", args->ip, askedDog, selectedDog);
 	menu(args);
 }
 
@@ -386,7 +374,8 @@ void showSearch(void *ptr){
 	printf("%s\n", name);
 
   if(!exists){
-		printf("%s\n","Mascota no existe");
+		printf("%s\n","Mascota no existe server");
+		generateLog("Busqueda", args->ip, "No encontrado", name);
 		menu(args);
 		return;
 	}
@@ -432,9 +421,7 @@ void showSearch(void *ptr){
 		exit(-1);
 	}
 	printf("Busqueda exitosa");
-	char* nameformated;
-	sprintf(nameformated, "%s]", name);
-	generateLog("Busqueda", "[Registro: Múltiples", nameformated);
+	generateLog("Busqueda", args->ip, "Registro: Múltiples", name);
 
 	free(newDog);
 	checkfclose(dataDogs, DATA_DOGS_PATH);

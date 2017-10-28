@@ -1,6 +1,6 @@
-// #include "linkedList.c"
 #include "atributes.c"
 #include <unistd.h>
+
 //Inicializa la hashTable
 void htInit(int* hashTable){
 	int i=0;
@@ -9,31 +9,23 @@ void htInit(int* hashTable){
 }
 //Le calcula la función hash a str
 int htHashFunction(char* str){
-	int sum = 0;
-	int i=0;
+	int sum = 0, i = 0;
 	for(i=0; i<strlen(str); i++){
 		sum += tolower(str[i])*(i+1);
-		sum%=HASH_TABLE_SIZE;
+		sum %= HASH_TABLE_SIZE;
 	}
 	return sum;
 }
 //Carga la hashTable con los registros de dataDogs.dat
 void htLoad(int* hashTable){
-	int auxHashTable[HASH_TABLE_SIZE];
-	int filePointer = 0;
-	int code = 0;
-	int i = 0, j=0;
-
+	htInit(auxHashTable);
+	int i = 0, j = 0, code = 0, filePointer = 0, count = 0, auxHashTable[HASH_TABLE_SIZE];
 	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
   struct dogType* prevDog = malloc(sizeof(struct dogType));
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r");
 	fseek(dataDogs, 0, SEEK_END);
 	int nStructures = ftell(dataDogs)/sizeof(struct dogType);
 	rewind(dataDogs);
-
-	htInit(auxHashTable);
-
-	int count=0;
 	for(i=0; i<nStructures; i++){
 		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
