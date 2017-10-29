@@ -406,7 +406,7 @@ void showSearch(void *ptr){
 		if(!strcmp(dogNameAux, nameAux)){
 			hasDog = 1;
 			if(success==0){
-				showDogTypeTableHead();
+				// showDogTypeTableHead();
 				success = 1;
 				hasDog = 2;
 			}
@@ -421,7 +421,7 @@ void showSearch(void *ptr){
 				exit(-1);
 			}
 		}
-		showDogTypeTable(newDog);
+		// showDogTypeTable(newDog);
 		next = newDog->next;
 	}while(next != 0);
 	hasDog = 0;
