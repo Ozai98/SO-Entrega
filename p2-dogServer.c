@@ -197,14 +197,7 @@ void recvNewReg(void *ptr){
 	checkfclose(fptc, CURRENT_ID_PATH);
   showFullDogType(newDog);
   //Cambia el next de la estructura anterior del mismo nombre
-  //poner en minusculas name
-  // char nameAux[NAME_SIZE];
-	// htHashFunction2(newDog->name);
-  // strcpy(nameAux, newDog->name);
-  // for(j = 0; j<strlen(nameAux); j++)
-  //   nameAux[j] = tolower(nameAux[j]);
-		int code = htHashFunction(newDog->name);
-
+	int code = htHashFunction(newDog->name);
 	int next = hashTable[code];
   FILE* fptr = checkfopen(DATA_DOGS_PATH, "r+");
 	struct dogType* currDog = malloc(sizeof(struct dogType));
@@ -215,7 +208,7 @@ void recvNewReg(void *ptr){
 	while(next > 0){
 		fseek(fptr, next, SEEK_SET);
 		fread(currDog, sizeof(struct dogType), 1, fptr);
-		showFullDogType(currDog);
+		// showFullDogType(currDog);
 		if(currDog->next == 0){
 			fseek(fptr, 0, SEEK_END);
 			currDog->next = (int)ftell(fptr);
@@ -264,13 +257,12 @@ void showReg(void *ptr){
   struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
   fseek(fptr, numReg*sizeof(struct dogType), SEEK_SET);
   fread(newDog, sizeof(struct dogType), 1, fptr);
-	showDogType(newDog);
+	showFullDogType(newDog);
   r = send(clientsd, newDog, sizeof(struct dogType), 0);
   if(r == -1){
     perror("Send error\n");
     exit(-1);
   }
-  showFullDogType(newDog);
 	sprintf(searchedRegistry, "%i", newDog->id);
 	sprintf(registryString, "%d", numReg+1);
   free(newDog);
@@ -282,7 +274,7 @@ void showReg(void *ptr){
 
 void recvDeleteReg(void *ptr){
 	struct threadArgs *args = ptr;
-	int r, i=0, numReg, filePointer, clientsd = args->clientsd;
+	int r, i=0, numReg, filePointer, clientsd = args->clientsd, code;
 	char consultedDog[10];
 	char returnedDog[10];
 	bzero(consultedDog, (int)sizeof(consultedDog));
@@ -311,6 +303,8 @@ void recvDeleteReg(void *ptr){
 		//Copia todos los registros en el archivo nuevo
 		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
+		// showDogTypeTable(currDog);
+		// printf("Next %i\n", currDog->next);
 		if(filePointer == numReg*sizeof(struct dogType)){
 			printf("Registro a eliminar:\n");
 			sprintf(returnedDog, "%d", currDog->id);
@@ -320,10 +314,25 @@ void recvDeleteReg(void *ptr){
 			  perror("Send error\n");
 			  exit(-1);
 			}
-			showFullDogType(currDog);
+			code = htHashFunction(currDog->name);
+			if(hashTable[code] == filePointer){
+				hashTable[code] = currDog->next == 0 ? -1 : currDog->next - sizeof(struct dogType);
+			}
 			continue;
 		}
-		currDog->next = 0;
+
+		if(currDog->next > numReg*sizeof(struct dogType)){
+			// printf("CurrDog->next > numReg*sizeof(struct dogType)\n");
+			currDog->next -= sizeof(struct dogType);
+			// printf("Next %i\n", currDog->next);
+		}else if(currDog->next == numReg*sizeof(struct dogType)){
+			// printf("CurrDog->next == numReg*sizeof(struct dogType)\n");
+			fseek(dataDogs, currDog->next, SEEK_SET);
+			fread(&currDog->next, sizeof(int), 1, dataDogs);
+			currDog->next -= sizeof(struct dogType);
+			// printf("Next %i\n", currDog->next);
+			fseek(dataDogs, filePointer+sizeof(struct dogType), SEEK_SET);
+		}
 		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
 	}
 
@@ -332,16 +341,14 @@ void recvDeleteReg(void *ptr){
 
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
-	// remove(DATA_DOGS_PATH);
-	// rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
-	printf("Pre redoNext()\n");
-	redoNext();
-	printf("Pos redoNext()\n");
-	htLoad(hashTable);
+	remove(DATA_DOGS_PATH);
+	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
 
-  printf("Borrado de registro exitosa\n");
+  printf("Borrado de registro exitoso\n");
 	sprintf(consultedDog, "%d", numReg+1);
 	generateLog("Eliminación", args->ip, returnedDog, consultedDog);
+
+	// TODO: send delete confirmation to client
 	menu(args);
 }
 
@@ -429,52 +436,4 @@ void showSearch(void *ptr){
 	free(newDog);
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	menu(args);
-}
-
-void redoNext(){
-	int tempHashTable[HASH_TABLE_SIZE];
-  FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r+");
-
-	fseek(dataDogs, 0, SEEK_END);
-	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
-	printf("TotalSize %i\n", totalSize);
-	rewind(dataDogs);
-
-	int i, j;
-	int currPos, currHash;
-	char nameAux[NAME_SIZE];
-	struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
-
-	for(i=0; i<totalSize; i++){
-		// if(i%1000000==0)
-		// printf("in i: %i.\n", i);
-		printf("(%i,%i)", i, i*sizeof(struct dogType));
-
-		currPos = i*sizeof(struct dogType);
-		fseek(dataDogs, currPos, SEEK_SET);
-		fread(currDog, sizeof(struct dogType), 1, dataDogs);
-		showDogTypeTable(currDog);
-		// printf("%s	", nameAux);
-		// for(j=0; j<NAME_SIZE; j++){
-		// 	printf("%c", nameAux[j]);
-		// }
-		// printf("\n");
-		// for(j=0; j<NAME_SIZE; j++){
-		// 	printf("%i", nameAux[j]);
-		// }
-		// printf("\n");
-    currHash = htHashFunction(currDog->name);
-
-		if(tempHashTable[currHash] != -1){
-      // the next atribute is the first in the struct
-			fseek(dataDogs, tempHashTable[currHash], SEEK_SET);
-			fread(currDog, sizeof(struct dogType), 1, dataDogs);
-			currDog->next = currPos;
-			fseek(dataDogs, tempHashTable[currHash], SEEK_SET);
-      fwrite(currDog, sizeof(struct dogType), 1, dataDogs);
-    }
-    tempHashTable[currHash] = currPos;
-	}
-	free(currDog);
-	checkfclose(dataDogs, DATA_DOGS_PATH);
 }
