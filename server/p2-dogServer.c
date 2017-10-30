@@ -309,34 +309,22 @@ void recvDeleteReg(void *ptr){
 		//Copia todos los registros en el archivo nuevo
 		filePointer = ftell(dataDogs);
 		fread(currDog, sizeof(struct dogType), 1, dataDogs);
-		// showDogTypeTable(currDog);
-		// printf("Next %i\n", currDog->next);
 		if(filePointer == numReg*sizeof(struct dogType)){
-			//printf("Registro a eliminar:\n");
 			sprintf(returnedDog, "%d", currDog->id);
-			//showFullDogType(currDog);
 			r = send(clientsd, currDog, sizeof(struct dogType), 0);
 			if(r == -1){
 			  perror("Send error\n");
 			  exit(-1);
 			}
-			code = htHashFunction(currDog->name);
-			if(hashTable[code] == filePointer){
-				hashTable[code] = currDog->next == 0 ? -1 : currDog->next - sizeof(struct dogType);
-			}
 			continue;
 		}
 
 		if(currDog->next > numReg*sizeof(struct dogType)){
-			// printf("CurrDog->next > numReg*sizeof(struct dogType)\n");
 			currDog->next -= sizeof(struct dogType);
-			// printf("Next %i\n", currDog->next);
 		}else if(currDog->next == numReg*sizeof(struct dogType)){
-			// printf("CurrDog->next == numReg*sizeof(struct dogType)\n");
 			fseek(dataDogs, currDog->next, SEEK_SET);
 			fread(&currDog->next, sizeof(int), 1, dataDogs);
 			currDog->next -= sizeof(struct dogType);
-			// printf("Next %i\n", currDog->next);
 			fseek(dataDogs, filePointer+sizeof(struct dogType), SEEK_SET);
 		}
 		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
@@ -350,7 +338,10 @@ void recvDeleteReg(void *ptr){
 	remove(DATA_DOGS_PATH);
 	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
 
-  printf("Borrado de registro exitoso\n");
+	htInit(hashTable);
+	htLoad(hashTable);
+
+  // printf("Borrado de registro exitoso\n");
 	sprintf(consultedDog, "%d", numReg+1);
 	generateLog("Eliminación", args->ip, returnedDog, consultedDog);
 
@@ -391,7 +382,7 @@ void showSearch(void *ptr){
 	//printf("%s\n", name);
 
   if(!exists){
-		printf("%s\n","Mascota no existe server");
+		// printf("%s\n","Mascota no existe server");
 		generateLog("Busqueda", args->ip, "No encontrado", name);
 		menu(args);
 		return;
@@ -443,7 +434,7 @@ void showSearch(void *ptr){
 		perror("Send error\n");
 		exit(-1);
 	}
-	printf("Busqueda exitosa");
+	// printf("Busqueda exitosa");
 	generateLog("Busqueda", args->ip, "Múltiples", name);
 
 	free(newDog);
