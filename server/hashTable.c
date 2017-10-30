@@ -54,7 +54,7 @@ void htLoad(int* hashTable){
 			hashTable[code] = filePointer;
 		}
 	}
-	printf("count: %i\n", count);
+	//printf("count: %i\n", count);
 	free(currDog);
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 }

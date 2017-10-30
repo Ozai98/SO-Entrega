@@ -257,11 +257,13 @@ void seeReg(int sd){
   // El ciclo no es reactivo
 	do{
 		printf("%s\n", "Ingrese el número del registro a consultar");
+    char ch;
 		scanf("%d", &numberReg);
 		//Si el numero ingresado se sale del rango de registros el registro solicitado no existe
-		if(numberReg < 1 || numberReg > totalSize)
+		if(numberReg < 1 || numberReg > totalSize){
 			printf("%s\n", "Este registro no existe");
-		else{
+      scanf(" %c", &ch);
+		}else{
 			numberReg -= 1;
       r = send(sd, &numberReg, sizeof(int), 0);
       if(r == -1){
@@ -295,7 +297,7 @@ void seeReg(int sd){
           perror("Recv error");
           exit(-1);
         }
-        printf("resp %i\n", resp);
+      //  printf("resp %i\n", resp);
 
         // file not found
         if(resp == 0){
@@ -303,7 +305,7 @@ void seeReg(int sd){
           char buffer[BUFSIZ];
           char file_name[12];
           sprintf(file_name, "%d.txt", (numberReg+1));
-          printf("%s\n", file_name);
+          //printf("%s\n", file_name);
           FILE* myFile = checkfopen(file_name, "w");
           checkfclose(myFile, file_name);
           sprintf(file_name, "gedit %d.txt", (numberReg+1));
@@ -318,7 +320,7 @@ void seeReg(int sd){
     				exit(-1);
     			}
           fileSize = file_stat.st_size;
-          printf("File size %i\n", fileSize);
+        //  printf("File size %i\n", fileSize);
           r = send(sd, &fileSize, sizeof(int), 0);
           if(r == -1){
             perror("send error");
@@ -328,11 +330,11 @@ void seeReg(int sd){
           int sent_bytes = 0;
           int remain_data = fileSize;
           while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
-            printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+          //  printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
             remain_data -= sent_bytes;
-            printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+          //  printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
           }
-          printf("Salió del while\n");
+          //printf("Salió del while\n");
 			    close(fd);
           remove(file_name);
         }
@@ -342,7 +344,7 @@ void seeReg(int sd){
           char buffer[BUFSIZ];
           char file_name[12];
           sprintf(file_name, "%d.txt", (numberReg+1));
-          printf("%s\n", file_name);
+          //printf("%s\n", file_name);
           FILE* myFile = checkfopen(file_name, "w");
           r = recv(sd, &fileSize, sizeof(int), 0);
           if(r != sizeof(int)){
@@ -357,7 +359,7 @@ void seeReg(int sd){
             remain_data -= len;
             // printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
           }
-          printf("Salió del while\n");
+          //printf("Salió del while\n");
           checkfclose(myFile, file_name);
           sprintf(file_name, "gedit %d.txt", (numberReg+1));
           system(file_name);
@@ -377,17 +379,17 @@ void seeReg(int sd){
             perror("send error");
             exit(-1);
           }
-    			printf("File size %i\n", (int)file_stat.st_size);
+    		//printf("File size %i\n", (int)file_stat.st_size);
     			fileSize = (int)file_stat.st_size;
           off_t offset = 0;
           int sent_bytes = 0;
           remain_data = fileSize;
           while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
-            printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+          //  printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
             remain_data -= sent_bytes;
-            printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+            //printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
           }
-          printf("Salió del while\n");
+          //printf("Salió del while\n");
 			    close(fd);
           remove(file_name);
         }
@@ -437,7 +439,14 @@ void deleteReg(int sd){
       }
       showDogType(currDog);
       free(currDog);
-  		printf("%s\n", "Eliminación exitosa... espere por favor");
+      printf("%s\n","Espere por favor");
+      int success;
+      r = recv(sd, &success, sizeof(int), 0);
+      if(r != sizeof(int)){
+        perror("Recv error");
+        exit(-1);
+      }
+      printf("%s\n", "Eliminación exitosa");
   	}
   }while(value == 0);
 	exeMenu(sd);

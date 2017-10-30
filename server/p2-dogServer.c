@@ -56,6 +56,7 @@ int main(){
 	struct sockaddr_in server, client[32];
 	htInit(hashTable);
 	htLoad(hashTable);
+	printf("%s\n","Servidor listo");
 	serversd = socket(AF_INET, SOCK_STREAM, 0);
 
   if(serversd == -1){
@@ -128,29 +129,28 @@ void *menu(void* ptr){
     perror("Recv error");
     exit(-1);
   }
-  printf("option: %i\n", option);
   switch (option) {
 		case 1:
-			printf("Ingresar registro\n");
+			//printf("Ingresar registro\n");
 			recvNewReg(args);
 			break;
 		case 2:
-			printf("Ver registro\n");
+			//printf("Ver registro\n");
 			showReg(args);
 			break;
 		case 3:
-			printf("Borrar registro\n");
+			//printf("Borrar registro\n");
 			recvDeleteReg(args);
 			break;
 		case 4:
-			printf("Buscar registro\n");
+			//printf("Buscar registro\n");
       showSearch(args);
 			break;
 		case 5:
-			printf("Salir\n");
+			//printf("Salir\n");
 			break;
 		default:
-			printf("default\n");
+			//printf("default\n");
 			break;
 	}
 }
@@ -169,7 +169,7 @@ void generateLog(char* opType, char* ip, char* registry, char* searchedString){
 	char* currentDate = timeAndDate(date);
 	FILE* serverLog = checkfopen(SERVER_LOG_PATH, "a");
 	snprintf(serverLogString, sizeof(serverLogString), "[Fecha: %s] [Cliente: %s] [Operacion: %s] [Registro: %s] [Cadena buscada: %s]\n", currentDate, ip, opType, registry, searchedString);
-	printf("%s\n", serverLogString);
+	//printf("%s\n", serverLogString);
 	const char *ptr = strchr(serverLogString, '\n');
 	if(ptr)
    index = ptr - serverLogString;
@@ -199,7 +199,7 @@ void recvNewReg(void *ptr){
 	rewind(fptc);
 	fwrite(&id, sizeof(int), 1, fptc);
 	checkfclose(fptc, CURRENT_ID_PATH);
-  showFullDogType(newDog);
+  //showFullDogType(newDog);
   //Cambia el next de la estructura anterior del mismo nombre
 	int code = htHashFunction(newDog->name);
 	int next = hashTable[code];
@@ -231,7 +231,7 @@ void recvNewReg(void *ptr){
   free(currDog);
 
 	checkfclose(fptr, DATA_DOGS_PATH);
-	printf("Registro añadido exitosamente.\n");
+	//printf("Registro añadido exitosamente.\n");
 	generateLog("Inserción", args->ip, registry, "Sin cadena de busqueda");
 	menu(args);
 }
@@ -261,7 +261,7 @@ void showReg(void *ptr){
   struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
   fseek(fptr, numReg*sizeof(struct dogType), SEEK_SET);
   fread(newDog, sizeof(struct dogType), 1, fptr);
-	showFullDogType(newDog);
+	//howFullDogType(newDog);
   r = send(clientsd, newDog, sizeof(struct dogType), 0);
   if(r == -1){
     perror("Send error\n");
@@ -270,7 +270,7 @@ void showReg(void *ptr){
 	sprintf(searchedRegistry, "%i", newDog->id);
 	sprintf(registryString, "%d", numReg+1);
   checkfclose(fptr, DATA_DOGS_PATH);
-  printf("Consulta de registro exitosa\n");
+  //printf("Consulta de registro exitosa\n");
 	generateLog("Lectura", args->ip, registryString, searchedRegistry);
 	openHistory(args, newDog->id);
 	free(newDog);
@@ -289,7 +289,7 @@ void recvDeleteReg(void *ptr){
 	fseek(dataDogs, 0, SEEK_END);
 	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
 	rewind(dataDogs);
-	printf("TotalSize: %i\n", totalSize);
+	//printf("TotalSize: %i\n", totalSize);
 
   r = send(clientsd, &totalSize, sizeof(int), 0);
   if(r == -1){
@@ -312,9 +312,9 @@ void recvDeleteReg(void *ptr){
 		// showDogTypeTable(currDog);
 		// printf("Next %i\n", currDog->next);
 		if(filePointer == numReg*sizeof(struct dogType)){
-			printf("Registro a eliminar:\n");
+			//printf("Registro a eliminar:\n");
 			sprintf(returnedDog, "%d", currDog->id);
-			showFullDogType(currDog);
+			//showFullDogType(currDog);
 			r = send(clientsd, currDog, sizeof(struct dogType), 0);
 			if(r == -1){
 			  perror("Send error\n");
@@ -343,7 +343,7 @@ void recvDeleteReg(void *ptr){
 	}
 
   free(currDog);
-	printf("%s\n", "Eliminación exitosa... espere por favor");
+	//printf("%s\n", "Eliminación exitosa... espere por favor");
 
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
@@ -355,7 +355,14 @@ void recvDeleteReg(void *ptr){
 	generateLog("Eliminación", args->ip, returnedDog, consultedDog);
 
 	// TODO: send delete confirmation to client
+	int success = 1;
+	r = send(clientsd, &success, sizeof(int), 0);
+	if(r == -1){
+		perror("Send error\n");
+		exit(-1);
+	}
 	menu(args);
+
 }
 
 void showSearch(void *ptr){
@@ -367,7 +374,7 @@ void showSearch(void *ptr){
     perror("Recv error");
     exit(-1);
   }
-  printf("%s\n", name);
+	//  printf("%s\n", name);
 
 	int success = 0;
 	int i = 0, j=0;
@@ -381,7 +388,7 @@ void showSearch(void *ptr){
 		perror("Send error\n");
 		exit(-1);
 	}
-	printf("%s\n", name);
+	//printf("%s\n", name);
 
   if(!exists){
 		printf("%s\n","Mascota no existe server");
@@ -445,7 +452,7 @@ void showSearch(void *ptr){
 }
 
 void openHistory(void *ptr, int dogId){
-	printf("dogID: %i\n", dogId);
+	//printf("dogID: %i\n", dogId);
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
 	int r;
@@ -463,8 +470,8 @@ void openHistory(void *ptr, int dogId){
 		char file_name_edit[12];
 		sprintf(file_name, "%i.txt", dogId);
 		sprintf(file_name_edit, "~%i.txt", dogId);
-		printf("file_name: %s\n", file_name);
-		printf("file_name_edit: %s\n", file_name_edit);
+		//printf("file_name: %s\n", file_name);
+		//printf("file_name_edit: %s\n", file_name_edit);
 		if(file_exist(file_name_edit))
 			resp = 2;
 		else
@@ -472,7 +479,7 @@ void openHistory(void *ptr, int dogId){
 				resp = 1;
 			else
 				resp = 0;
-		printf("resp %i\n", resp);
+		//printf("resp %i\n", resp);
 		r = send(clientsd, &resp, sizeof(int), 0);
 		if(r == -1){
 			perror("Recv error");
@@ -495,10 +502,10 @@ void openHistory(void *ptr, int dogId){
 			int len;
 			char buffer[BUFSIZ];
 			while ((remain_data > 0) && ((len = recv(clientsd, buffer, BUFSIZ, 0)) > 0)){
-				printf("in while\n");
+				//printf("in while\n");
 				fwrite(buffer, sizeof(char), len, myFile);
 				remain_data -= len;
-				printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
+				//printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
 			}
 			checkfclose(myFile, file_name);
 
@@ -509,7 +516,7 @@ void openHistory(void *ptr, int dogId){
 			FILE* edit = checkfopen(file_name_edit, "w");
 			checkfclose(edit, file_name_edit);
 
-			printf("%s\n", file_name);
+			//printf("%s\n", file_name);
 			int fd = open(file_name, O_RDONLY);
 			if (fd == -1){
 				perror("open error\n");
@@ -520,7 +527,7 @@ void openHistory(void *ptr, int dogId){
 				perror("fstat error\n");
 				exit(-1);
 			}
-			printf("File size %i\n", (int)file_stat.st_size);
+			//printf("File size %i\n", (int)file_stat.st_size);
 			fileSize = (int)file_stat.st_size;
 			// printf("File size %i\n", fileSize);
 			r = send(clientsd, &fileSize, sizeof(int), 0);
@@ -553,10 +560,10 @@ void openHistory(void *ptr, int dogId){
 			int len;
       char buffer[BUFSIZ];
 			while ((remain_data > 0) && ((len = recv(clientsd, buffer, BUFSIZ, 0)) > 0)){
-				printf("in while\n");
+			//	printf("in while\n");
 				fwrite(buffer, sizeof(char), len, myFile);
 				remain_data -= len;
-				printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
+			//	printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
 			}
 			checkfclose(myFile, file_name);
 			remove(file_name_edit);
