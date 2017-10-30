@@ -7,6 +7,9 @@
 #include <pthread.h>
 #include <strings.h>
 #include "hashTable.c"
+#include <sys/stat.h>
+#include <sys/sendfile.h>
+#include <fcntl.h>
 
 #define BACKLOG 2
 #define PORT 3535
@@ -41,7 +44,8 @@ void recvNewReg(void *ptr);
 void showReg(void *ptr);
 void recvDeleteReg(void *ptr);
 void showSearch(void *ptr);
-void redoNext();
+void openHistory();
+int file_exist(char *filename);
 
 
 int main(){
@@ -265,10 +269,12 @@ void showReg(void *ptr){
   }
 	sprintf(searchedRegistry, "%i", newDog->id);
 	sprintf(registryString, "%d", numReg+1);
-  free(newDog);
   checkfclose(fptr, DATA_DOGS_PATH);
   printf("Consulta de registro exitosa\n");
 	generateLog("Lectura", args->ip, registryString, searchedRegistry);
+	openHistory(args, newDog->id);
+	free(newDog);
+
 	menu(args);
 }
 
@@ -436,4 +442,129 @@ void showSearch(void *ptr){
 	free(newDog);
 	checkfclose(dataDogs, DATA_DOGS_PATH);
 	menu(args);
+}
+
+void openHistory(void *ptr, int dogId){
+	printf("dogID: %i\n", dogId);
+	struct threadArgs *args = ptr;
+	int clientsd = args->clientsd;
+	int r;
+	char ans;
+	r = recv(clientsd, &ans, sizeof(char), 0);
+	if(r != sizeof(char)){
+		perror("Recv error");
+		exit(-1);
+	}
+
+	if(ans == 's' || ans == 'S'){
+		struct stat file_stat;
+		int fileSize, resp;
+		char file_name[12];
+		char file_name_edit[12];
+		sprintf(file_name, "%i.txt", dogId);
+		sprintf(file_name_edit, "~%i.txt", dogId);
+		printf("file_name: %s\n", file_name);
+		printf("file_name_edit: %s\n", file_name_edit);
+		if(file_exist(file_name_edit))
+			resp = 2;
+		else
+			if(file_exist(file_name))
+				resp = 1;
+			else
+				resp = 0;
+		printf("resp %i\n", resp);
+		r = send(clientsd, &resp, sizeof(int), 0);
+		if(r == -1){
+			perror("Recv error");
+			exit(-1);
+		}
+
+		// file not found
+		if(resp == 0){
+			FILE* edit = checkfopen(file_name_edit, "w");
+			checkfclose(edit, file_name_edit);
+
+			r = recv(clientsd, &fileSize, sizeof(int), 0);
+			if(r != sizeof(int)){
+				perror("Recv error");
+				exit(-1);
+			}
+			int remain_data = fileSize;
+			sprintf(file_name, "%i.txt", dogId);
+			FILE* myFile = checkfopen(file_name, "w");
+			int len;
+			char buffer[BUFSIZ];
+			while ((remain_data > 0) && ((len = recv(clientsd, buffer, BUFSIZ, 0)) > 0)){
+				printf("in while\n");
+				fwrite(buffer, sizeof(char), len, myFile);
+				remain_data -= len;
+				printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
+			}
+			checkfclose(myFile, file_name);
+
+			remove(file_name_edit);
+		}
+		//  file exists
+		else if(resp == 1){
+			FILE* edit = checkfopen(file_name_edit, "w");
+			checkfclose(edit, file_name_edit);
+
+			printf("%s\n", file_name);
+			int fd = open(file_name, O_RDONLY);
+			if (fd == -1){
+				perror("open error\n");
+				exit(-1);
+			}
+			r = stat(file_name, &file_stat);
+			if (r == -1){
+				perror("fstat error\n");
+				exit(-1);
+			}
+			printf("File size %i\n", (int)file_stat.st_size);
+			fileSize = (int)file_stat.st_size;
+			// printf("File size %i\n", fileSize);
+			r = send(clientsd, &fileSize, sizeof(int), 0);
+			if(r == -1){
+				perror("send error");
+				exit(-1);
+			}
+
+			off_t offset = 0;
+			int sent_bytes = 0;
+			int remain_data = fileSize;
+			/* Sending file data */
+			// while ((remain_data > 0) && ((sent_bytes = sendfile(clientsd, fd, &offset, BUFSIZ)) > 0)){
+			while (((sent_bytes = sendfile(clientsd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
+				// printf("in while\n");
+				// printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+				remain_data -= sent_bytes;
+				// printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+			}
+			// printf("Salió del while\n");
+			close(fd);
+
+			r = recv(clientsd, &fileSize, sizeof(int), 0);
+			if(r != sizeof(int)){
+				perror("Recv error");
+				exit(-1);
+			}
+			remain_data = fileSize;
+			FILE* myFile = checkfopen(file_name, "w");
+			int len;
+      char buffer[BUFSIZ];
+			while ((remain_data > 0) && ((len = recv(clientsd, buffer, BUFSIZ, 0)) > 0)){
+				printf("in while\n");
+				fwrite(buffer, sizeof(char), len, myFile);
+				remain_data -= len;
+				printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
+			}
+			checkfclose(myFile, file_name);
+			remove(file_name_edit);
+		}
+	}
+}
+
+int file_exist(char *filename){
+  struct stat buffer;
+  return (stat(filename, &buffer) == 0);
 }

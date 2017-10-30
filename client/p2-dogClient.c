@@ -17,6 +17,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <sys/stat.h>
+#include <sys/sendfile.h>
+#include <fcntl.h>
+
 #define PORT 3535
 
 
@@ -241,6 +245,7 @@ void seeReg(int sd){
 	int value = 0;
 	int totalSize;
 	char ans;
+  int resp;
 
 
   int r = recv( sd, &totalSize, sizeof(int), 0);
@@ -274,6 +279,127 @@ void seeReg(int sd){
       showDogType(newDog);
       free(newDog);
       printf("Consulta de registro exitosa\n");
+
+      printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
+			scanf(" %c", &ans);
+
+      r = send(sd, &ans, sizeof(char), 0);
+      if(r == -1){
+        perror("Send error\n");
+        exit(-1);
+      }
+			//Si la respuesta es afirmativa, abre la historia clinima
+			if(ans == 's' || ans == 'S'){
+        r = recv(sd, &resp, sizeof(int), 0);
+        if(r != sizeof(int)){
+          perror("Recv error");
+          exit(-1);
+        }
+        printf("resp %i\n", resp);
+
+        // file not found
+        if(resp == 0){
+          int fileSize, len;
+          char buffer[BUFSIZ];
+          char file_name[12];
+          sprintf(file_name, "%d.txt", (numberReg+1));
+          printf("%s\n", file_name);
+          FILE* myFile = checkfopen(file_name, "w");
+          checkfclose(myFile, file_name);
+          sprintf(file_name, "gedit %d.txt", (numberReg+1));
+          system(file_name);
+
+          sprintf(file_name, "%d.txt", (numberReg+1));
+          int fd = open(file_name, O_RDONLY);
+
+	        struct stat file_stat;
+          if (fstat(fd, &file_stat) < 0){
+    				perror("fstat error\n");
+    				exit(-1);
+    			}
+          fileSize = file_stat.st_size;
+          printf("File size %i\n", fileSize);
+          r = send(sd, &fileSize, sizeof(int), 0);
+          if(r == -1){
+            perror("send error");
+            exit(-1);
+          }
+          off_t offset = 0;
+          int sent_bytes = 0;
+          int remain_data = fileSize;
+          while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
+            printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+            remain_data -= sent_bytes;
+            printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+          }
+          printf("Salió del while\n");
+			    close(fd);
+          remove(file_name);
+        }
+        //  file exists
+        else if(resp == 1){
+          int fileSize, len;
+          char buffer[BUFSIZ];
+          char file_name[12];
+          sprintf(file_name, "%d.txt", (numberReg+1));
+          printf("%s\n", file_name);
+          FILE* myFile = checkfopen(file_name, "w");
+          r = recv(sd, &fileSize, sizeof(int), 0);
+          if(r != sizeof(int)){
+            perror("Recv error");
+            exit(-1);
+          }
+          // printf("fileSize%i\n", fileSize);
+          int remain_data = fileSize;
+          while ((remain_data > 0) && ((len = recv(sd, buffer, BUFSIZ, 0)) > 0)){
+            // printf("in while\n");
+            fwrite(buffer, sizeof(char), len, myFile);
+            remain_data -= len;
+            // printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
+          }
+          printf("Salió del while\n");
+          checkfclose(myFile, file_name);
+          sprintf(file_name, "gedit %d.txt", (numberReg+1));
+          system(file_name);
+
+
+          sprintf(file_name, "%d.txt", (numberReg+1));
+          int fd = open(file_name, O_RDONLY);
+
+	        struct stat file_stat;
+          if (fstat(fd, &file_stat) < 0){
+    				perror("fstat error\n");
+    				exit(-1);
+    			}
+          fileSize = file_stat.st_size;
+          r = send(sd, &fileSize, sizeof(int), 0);
+          if(r == -1){
+            perror("send error");
+            exit(-1);
+          }
+    			printf("File size %i\n", (int)file_stat.st_size);
+    			fileSize = (int)file_stat.st_size;
+          off_t offset = 0;
+          int sent_bytes = 0;
+          remain_data = fileSize;
+          while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
+            printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+            remain_data -= sent_bytes;
+            printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+          }
+          printf("Salió del while\n");
+			    close(fd);
+          remove(file_name);
+        }
+        //  file editing
+        else if(resp == 2){
+          printf("Archivo en uso, intente más tarde\n");
+        }
+        // //abrir
+        // sprintf(file_name_2, "gedit %d.txt", (numberReg+1));
+				// system(file_name_2);
+			}
+
 			exeMenu(sd);
 		}
 	}while (value == 0);
