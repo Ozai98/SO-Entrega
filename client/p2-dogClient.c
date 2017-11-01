@@ -467,8 +467,9 @@ void searchReg(int sd){
 
   int exists = 0;
   r = recv(sd, &exists, sizeof(int), 0);
+  printf("R: %i\n", r);
   if(r != sizeof(int)){
-    perror("Recv error");
+    perror("Recv error exists");
     exit(-1);
   }
   printf("exists: %i\n", exists);
@@ -480,22 +481,49 @@ void searchReg(int sd){
 
   int hasDog = 0;
   struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
+  int something;
+  int r2;
   do{
+    // printf("Esperando hasDog\n");
     r = recv(sd, &hasDog, sizeof(int), 0);
     if(r != sizeof(int)){
-      perror("Recv error");
+      perror("Recv error has Dog");
       exit(-1);
     }
+    // printf("Terminando hasDog\n");
     if (hasDog){
       exists = 1;
       if (hasDog == 2)
         showDogTypeTableHead();
+      something = sizeof(struct dogType);
+      // printf("Esperando while\n");
+      // printf("something (%i)\n", something);
 
-      r = recv(sd, newDog, sizeof(struct dogType), 0);
-      if(r != sizeof(struct dogType)){
-        perror("Recv error");
-        exit(-1);
+      while((r = recv(sd, newDog+sizeof(struct dogType)-something, sizeof(struct dogType), 0)) != something){
+        if(r == -1){
+          perror("recv error\n");
+          exit(-1);
+        }
+        something -= r;
       }
+
+      // do{
+      //   r = recv(sd, newDog, sizeof(struct dogType), 0);
+      //   // printf("R: (%i)\n", r);
+      //   r2 = send(sd, &r, sizeof(int), 0);
+      //   if(r2 == -1){
+      //     perror("Send error\n");
+      //     exit(-1);
+      //   }
+      // }while(r != sizeof(struct dogType));
+
+      // printf("Terminando while\n");
+      // r = recv(sd, newDog, sizeof(struct dogType), 0);
+      // if(r != sizeof(struct dogType)){
+      //   printf("r (%i), dogType (%lu)\n", r, sizeof(struct dogType));
+      //   perror("Recv error dog");
+      //   exit(-1);
+      // }
       showDogTypeTable(newDog);
     }
   }while(hasDog);
