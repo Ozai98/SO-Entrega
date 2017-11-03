@@ -34,7 +34,6 @@
 struct threadArgs{
 	int clientsd;
 	char ip[INET6_ADDRSTRLEN];
-	int id;
 };
 
 
@@ -90,17 +89,16 @@ int main(){
   }
 	for(i = 0; i < NUM_THREADS; i++){
 	  // process or thread
+		int clientsd = accept(serversd, (struct sockaddr*)&client[i], (socklen_t*)&clientSize);
+		if(clientsd == -1){
+			perror("Accept error\n");
+			exit(-1);
+		}
 		args[i] = (struct threadArgs*)malloc(sizeof(struct threadArgs));
-    args[i]->id = i;
-	  args[i]->clientsd = accept(serversd, (struct sockaddr*)&client[i], (socklen_t*)&clientSize);
+		args[i]->clientsd = clientsd;
 		bzero(args[i]->ip,sizeof(args[i]->ip));
 		inet_ntop(AF_INET, &client[i].sin_addr, args[i]->ip, sizeof args[i]->ip);
-	  if(args[i]->clientsd == -1){
-	    perror("Accept error\n");
-	    exit(-1);
-	  }
 		r = pthread_create(&threads[i], NULL, menu, (void*)args[i]);
-
 		if(r != 0){
       perror("pthread_create error");
       exit(-1);
@@ -148,6 +146,7 @@ void *menu(void* ptr){
 			break;
 		case 5:
 			//printf("Salir\n");
+			free(args);
 			break;
 		default:
 			//printf("default\n");
@@ -204,11 +203,11 @@ void recvNewReg(void *ptr){
 	int code = htHashFunction(newDog->name);
 	int next = hashTable[code];
   FILE* fptr = checkfopen(DATA_DOGS_PATH, "r+");
-	struct dogType* currDog = malloc(sizeof(struct dogType));
 	if(next == -1){
 		fseek(fptr, 0, SEEK_END);
 		hashTable[code] = ftell(fptr);
 	}
+	struct dogType* currDog = malloc(sizeof(struct dogType));
 	while(next > 0){
 		fseek(fptr, next, SEEK_SET);
 		fread(currDog, sizeof(struct dogType), 1, fptr);
@@ -217,7 +216,7 @@ void recvNewReg(void *ptr){
 			fseek(fptr, 0, SEEK_END);
 			currDog->next = (int)ftell(fptr);
 			fseek(fptr, next, SEEK_SET);
-			fwrite(currDog, sizeof(struct dogType), 1, fptr);
+			fwrite(&currDog->next, sizeof(int), 1, fptr);
 			break;
 		}
 		next = currDog->next;
@@ -225,6 +224,7 @@ void recvNewReg(void *ptr){
 
 	//Añade la estructura a la hashTable y a dataDogs.dat
 	fseek(fptr, 0, SEEK_END);
+	newDog->position = ftell(fptr)/sizeof(struct dogType)+1;
 	fwrite(newDog, sizeof(struct dogType), 1, fptr);
 	sprintf(registry, "%u", newDog->id);
   free(newDog);
@@ -261,7 +261,7 @@ void showReg(void *ptr){
   struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
   fseek(fptr, numReg*sizeof(struct dogType), SEEK_SET);
   fread(newDog, sizeof(struct dogType), 1, fptr);
-	//howFullDogType(newDog);
+	// showFullDogType(newDog);
   r = send(clientsd, newDog, sizeof(struct dogType), 0);
   if(r == -1){
     perror("Send error\n");
@@ -289,7 +289,6 @@ void recvDeleteReg(void *ptr){
 	fseek(dataDogs, 0, SEEK_END);
 	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
 	rewind(dataDogs);
-	//printf("TotalSize: %i\n", totalSize);
 
   r = send(clientsd, &totalSize, sizeof(int), 0);
   if(r == -1){
@@ -318,8 +317,12 @@ void recvDeleteReg(void *ptr){
 			}
 			continue;
 		}
+		if(filePointer > numReg*sizeof(struct dogType))
+			currDog->position -= 1;
 
-		if(currDog->next > numReg*sizeof(struct dogType)){
+		if(currDog->next == 0){
+			// en caso de que el registro que se quiera eliminar sea el primero (numReg = 0)
+		}else if(currDog->next > numReg*sizeof(struct dogType)){
 			currDog->next -= sizeof(struct dogType);
 		}else if(currDog->next == numReg*sizeof(struct dogType)){
 			fseek(dataDogs, currDog->next, SEEK_SET);
@@ -345,7 +348,7 @@ void recvDeleteReg(void *ptr){
 	sprintf(consultedDog, "%d", numReg+1);
 	generateLog("Eliminación", args->ip, returnedDog, consultedDog);
 
-	// TODO: send delete confirmation to client
+	// send delete confirmation to client
 	int success = 1;
 	r = send(clientsd, &success, sizeof(int), 0);
 	if(r == -1){
@@ -419,11 +422,12 @@ void showSearch(void *ptr){
 				perror("Send error\n");
 				exit(-1);
 			}
-			r = send(clientsd, newDog, sizeof(struct dogType), 0);
-			if(r == -1){
-				perror("Send error\n");
-				exit(-1);
-			}
+			checkSend(clientsd, newDog, sizeof(struct dogType), 0, "newDog");
+			// r = send(clientsd, newDog, sizeof(struct dogType), 0);
+			// if(r == -1){
+			// 	perror("Send error\n");
+			// 	exit(-1);
+			// }
 		}
 		// showDogTypeTable(newDog);
 		next = newDog->next;

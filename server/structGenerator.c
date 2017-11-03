@@ -68,6 +68,7 @@ int main(){
   struct dogType* prevDog = malloc(sizeof(struct dogType));
   for(i=0; i<STRUCTURES_NUMBER; i++, id++){
     newDog->id = id;
+    newDog->position = id;
     number = (i % 1716) *32;
     fseek(fPetNames, number, SEEK_SET);
     fread(newDog->name, 1, NAME_SIZE, fPetNames);

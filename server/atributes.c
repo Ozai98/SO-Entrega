@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
 //Constantes de tamaño
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
@@ -19,6 +22,7 @@
 //Declaración de la estructura
 struct dogType{
 	int next;
+	int position;
 	unsigned int id;
 	char name[NAME_SIZE];
 	char type[TYPE_SIZE];
@@ -32,7 +36,8 @@ struct dogType{
 //Función que imprime una estructura mascota
 void showDogType(void *p){
 	struct dogType *dog = p;
-  printf("Id:\t%u\n",dog->id);
+	printf("Id:\t%u\n",dog->id);
+  printf("Posición:\t%u\n",dog->position);
   printf("Nombre:\t%s\n",dog->name);
   printf("Tipo:\t%s\n",dog->type);
   printf("Raza:\t%s\n",dog->breed);
@@ -44,7 +49,8 @@ void showDogType(void *p){
 //Función que imprime una estructura mascota
 void showFullDogType(void *p){
 	struct dogType *dog = p;
-  printf("Id:\t%u\n",dog->id);
+	printf("Id:\t%u\n",dog->id);
+  printf("Posición:\t%u\n",dog->position);
   printf("Nombre:\t%s\n",dog->name);
   printf("Tipo:\t%s\n",dog->type);
   printf("Raza:\t%s\n",dog->breed);
@@ -57,7 +63,7 @@ void showFullDogType(void *p){
 
 //Función que imprime la cabecera de la tabla que muestra los nombres que coinciden con el campo introducido en la función de busqueda de un registro
 void showDogTypeTableHead(){
-	printf("\tID\tEDAD\tALTURA\tPESO\tGENERO\tNOMBRE\t\t\t\tTIPO\t\t\t\tRAZA\n");
+	printf("\tID\tPOSICIÓN\tEDAD\tALTURA\tPESO\tGENERO\tNOMBRE\t\t\t\tTIPO\t\t\t\tRAZA\tNEXT\n");
 }
 //Función que imprime la tabla que muestra los nombres que coinciden con el campo introducido en la función de busqueda de un registro
 void showDogTypeTable(void* p){
@@ -79,8 +85,7 @@ void showDogTypeTable(void* p){
 	for(i=0; i<cantTab; i++)
 		strcat(auxBreed, tab);
 
-	printf("%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\n",dog->id, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed);
-	// printf("%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\t%i\n",dog->id, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed, dog->next);
+	printf("%10i\t%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\t%i\n",dog->id, dog->position, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed, dog->next);
 }
 //Funcion que abre un archivo y captura errores
 FILE* checkfopen(const char *path, const char *mode){
@@ -106,3 +111,31 @@ int checkfclose(FILE* stream, char* path){
   }
 }
 // TODO: Create checkfwrite, checkfread, checkmalloc, checkfree
+
+ssize_t checkSend(int socketsd, const void *buf, size_t len, int flags, char* message){
+	ssize_t remain_data = len, r;
+	while((r = send(socketsd, buf+len-remain_data, len, 0)) != remain_data){
+		if(r == -1){
+			char messageRet[250];
+      sprintf(messageRet, "send error %lu of %lu bytes sent of %s\n", len-remain_data, len, message);
+			perror(messageRet);
+			exit(-1);
+		}
+		remain_data -= r;
+	}
+	return remain_data;
+}
+
+ssize_t checkRecv(int sockfd, void *buf, size_t len, int flags, char* message){
+	ssize_t remain_data = len, r;
+	while((r = recv(sockfd, buf+len-remain_data, len, 0)) != remain_data){
+		if(r == -1){
+			char messageRet[250];
+      sprintf(messageRet, "recv error %lu of %lu bytes received of %s\n", len-remain_data, len, message);
+			perror(messageRet);
+			exit(-1);
+		}
+		remain_data -= r;
+	}
+	return remain_data;
+}

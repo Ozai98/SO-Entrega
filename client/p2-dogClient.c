@@ -58,13 +58,6 @@ int main(int argc, char *argv[]){
     perror("Connect error");
     exit(-1);
   }
-  // int num = 99;
-  // r = send(sd, num, sizeof(int), 0);
-  // if(r == -1){
-  //   perror("Send error\n");
-  //   exit(-1);
-  // }
-
 	menu(sd);
 
   close(sd);
@@ -90,8 +83,8 @@ void menu(int sd){
 	do{
 		printf("Ingrese la opcion deseada: ");
 		scanf("%32s", input);
+    printf("Opcion %s: ", input);
 		num = input[0]-48;
-		printf("Opcion %s: ", input);
 		if (strlen(input) != 1 || num < 1 || num > 5)
 			printf("%s\n", "El valor ingresado no es valido, intente de nuevo");
 	}while(strlen(input) != 1 || num < 1 || num > 5);
@@ -226,6 +219,8 @@ void addReg(int sd){
 	newDog->weight = weight;
 	newDog->gender = sex;
 	newDog->next = 0;
+  newDog->id = 0;
+  newDog->position = 0;
 	//Muestra la estructura creada
 	showDogType(newDog);
 
@@ -279,6 +274,7 @@ void seeReg(int sd){
         exit(-1);
       }
       showDogType(newDog);
+      showFullDogType(newDog);
       free(newDog);
       printf("Consulta de registro exitosa\n");
 
@@ -499,13 +495,15 @@ void searchReg(int sd){
       // printf("Esperando while\n");
       // printf("something (%i)\n", something);
 
-      while((r = recv(sd, newDog+sizeof(struct dogType)-something, sizeof(struct dogType), 0)) != something){
-        if(r == -1){
-          perror("recv error\n");
-          exit(-1);
-        }
-        something -= r;
-      }
+
+      checkRecv(sd, newDog, sizeof(struct dogType), 0, "newDog");
+      // while((r = recv(sd, newDog+sizeof(struct dogType)-something, sizeof(struct dogType), 0)) != something){
+      //   if(r == -1){
+      //     perror("recv error\n");
+      //     exit(-1);
+      //   }
+      //   something -= r;
+      // }
 
       // do{
       //   r = recv(sd, newDog, sizeof(struct dogType), 0);
