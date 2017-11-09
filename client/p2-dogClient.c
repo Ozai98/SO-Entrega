@@ -21,7 +21,7 @@
 #include <sys/sendfile.h>
 #include <fcntl.h>
 
-#define PORT 3535
+#define PORT 3536
 
 
 //Declaración de las funciones
@@ -243,7 +243,7 @@ void seeReg(int sd){
   int resp;
 
 
-  int r = recv( sd, &totalSize, sizeof(int), 0);
+  int r = recv( sd, &totalSize, sizeof(int), MSG_WAITALL);
   if(r != sizeof(int)){
     perror("Recv error");
     exit(-1);
@@ -268,7 +268,7 @@ void seeReg(int sd){
 			//Imprime el registro solicitado
 			value = 1;
 			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
-      r = recv(sd, newDog, sizeof(struct dogType), 0);
+      r = recv(sd, newDog, sizeof(struct dogType), MSG_WAITALL);
       if(r != sizeof(struct dogType)){
         perror("Recv error");
         exit(-1);
@@ -288,7 +288,7 @@ void seeReg(int sd){
       }
 			//Si la respuesta es afirmativa, abre la historia clinima
 			if(ans == 's' || ans == 'S'){
-        r = recv(sd, &resp, sizeof(int), 0);
+        r = recv(sd, &resp, sizeof(int), MSG_WAITALL);
         if(r != sizeof(int)){
           perror("Recv error");
           exit(-1);
@@ -342,7 +342,7 @@ void seeReg(int sd){
           sprintf(file_name, "%d.txt", (numberReg+1));
           //printf("%s\n", file_name);
           FILE* myFile = checkfopen(file_name, "w");
-          r = recv(sd, &fileSize, sizeof(int), 0);
+          r = recv(sd, &fileSize, sizeof(int), MSG_WAITALL);
           if(r != sizeof(int)){
             perror("Recv error");
             exit(-1);
@@ -406,7 +406,7 @@ void seeReg(int sd){
 void deleteReg(int sd){
   int totalSize, value = 0, i = 0, filePointer = 0, code = 0, delReg = 0, success = 0;
 
-  int r = recv( sd, &totalSize, sizeof(int), 0);
+  int r = recv( sd, &totalSize, sizeof(int), MSG_WAITALL);
   if(r != sizeof(int)){
     perror("Recv error");
     exit(-1);
@@ -428,7 +428,7 @@ void deleteReg(int sd){
       }
 
       struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
-      r = recv(sd, currDog, sizeof(struct dogType), 0);
+      r = recv(sd, currDog, sizeof(struct dogType), MSG_WAITALL);
       if(r != sizeof(struct dogType)){
         perror("Recv error");
         exit(-1);
@@ -437,7 +437,7 @@ void deleteReg(int sd){
       free(currDog);
       printf("%s\n","Espere por favor");
       int success;
-      r = recv(sd, &success, sizeof(int), 0);
+      r = recv(sd, &success, sizeof(int), MSG_WAITALL);
       if(r != sizeof(int)){
         perror("Recv error");
         exit(-1);
@@ -462,7 +462,7 @@ void searchReg(int sd){
   }
 
   int exists = 0;
-  r = recv(sd, &exists, sizeof(int), 0);
+  r = recv(sd, &exists, sizeof(int), MSG_WAITALL);
   printf("R: %i\n", r);
   if(r != sizeof(int)){
     perror("Recv error exists");
@@ -481,7 +481,7 @@ void searchReg(int sd){
   int r2;
   do{
     // printf("Esperando hasDog\n");
-    r = recv(sd, &hasDog, sizeof(int), 0);
+    r = recv(sd, &hasDog, sizeof(int), MSG_WAITALL);
     if(r != sizeof(int)){
       perror("Recv error has Dog");
       exit(-1);
@@ -496,7 +496,8 @@ void searchReg(int sd){
       // printf("something (%i)\n", something);
 
 
-      checkRecv(sd, newDog, sizeof(struct dogType), 0, "newDog");
+      recv(sd, newDog, sizeof(struct dogType), MSG_WAITALL);
+      // checkRecv(sd, newDog, sizeof(struct dogType), 0, "newDog");
       // while((r = recv(sd, newDog+sizeof(struct dogType)-something, sizeof(struct dogType), 0)) != something){
       //   if(r == -1){
       //     perror("recv error\n");

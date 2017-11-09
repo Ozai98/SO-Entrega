@@ -12,7 +12,7 @@
 #include <fcntl.h>
 
 #define BACKLOG 2
-#define PORT 3535
+#define PORT 3536
 #define SERVER_LOG_PATH "ServerDogs.log"
 #define NUM_THREADS 32
 
@@ -122,7 +122,7 @@ void *menu(void* ptr){
 	struct threadArgs* args = ptr;
 	int clientsd = args->clientsd;
   int option;
-  int r = recv(clientsd, &option, sizeof(int), 0);
+  int r = recv(clientsd, &option, sizeof(int), MSG_WAITALL);
   if(r != sizeof(int)){
     perror("Recv error");
     exit(-1);
@@ -184,7 +184,7 @@ void recvNewReg(void *ptr){
 	char registry[10];
 	bzero(registry, (int)sizeof(registry));
   struct dogType *newDog = (struct dogType*) malloc(sizeof(struct dogType));
-  int r = recv(clientsd, newDog, sizeof(struct dogType), 0);
+  int r = recv(clientsd, newDog, sizeof(struct dogType), MSG_WAITALL);
   if(r != sizeof(struct dogType)){
     perror("Recv error");
     exit(-1);
@@ -253,7 +253,7 @@ void showReg(void *ptr){
   }
 
   int numReg;
-  r = recv(clientsd, &numReg, sizeof(int), 0);
+  r = recv(clientsd, &numReg, sizeof(int), MSG_WAITALL);
   if(r != sizeof(int)){
     perror("Recv error");
     exit(-1);
@@ -296,7 +296,7 @@ void recvDeleteReg(void *ptr){
     exit(-1);
   }
 
-  r = recv(clientsd, &numReg, sizeof(int), 0);
+  r = recv(clientsd, &numReg, sizeof(int), MSG_WAITALL);
   if(r != sizeof(int)){
     perror("Recv error");
     exit(-1);
@@ -363,7 +363,7 @@ void showSearch(void *ptr){
 	struct threadArgs *args = ptr;
 	int clientsd = args->clientsd;
 	char name[NAME_SIZE];
-  int r = recv(clientsd, name, NAME_SIZE, 0);
+  int r = recv(clientsd, name, NAME_SIZE, MSG_WAITALL);
   if(r != NAME_SIZE){
     perror("Recv error");
     exit(-1);
@@ -422,7 +422,8 @@ void showSearch(void *ptr){
 				perror("Send error\n");
 				exit(-1);
 			}
-			checkSend(clientsd, newDog, sizeof(struct dogType), 0, "newDog");
+			send(clientsd, newDog, sizeof(struct dogType), 0);
+			// checkSend(clientsd, newDog, sizeof(struct dogType), 0, "newDog");
 			// r = send(clientsd, newDog, sizeof(struct dogType), 0);
 			// if(r == -1){
 			// 	perror("Send error\n");
@@ -452,7 +453,7 @@ void openHistory(void *ptr, int dogId){
 	int clientsd = args->clientsd;
 	int r;
 	char ans;
-	r = recv(clientsd, &ans, sizeof(char), 0);
+	r = recv(clientsd, &ans, sizeof(char), MSG_WAITALL);
 	if(r != sizeof(char)){
 		perror("Recv error");
 		exit(-1);
@@ -475,7 +476,7 @@ void openHistory(void *ptr, int dogId){
 			else
 				resp = 0;
 		//printf("resp %i\n", resp);
-		r = send(clientsd, &resp, sizeof(int), 0);
+		r = send(clientsd, &resp, sizeof(int), MSG_WAITALL);
 		if(r == -1){
 			perror("Recv error");
 			exit(-1);
@@ -486,7 +487,7 @@ void openHistory(void *ptr, int dogId){
 			FILE* edit = checkfopen(file_name_edit, "w");
 			checkfclose(edit, file_name_edit);
 
-			r = recv(clientsd, &fileSize, sizeof(int), 0);
+			r = recv(clientsd, &fileSize, sizeof(int), MSG_WAITALL);
 			if(r != sizeof(int)){
 				perror("Recv error");
 				exit(-1);
@@ -545,7 +546,7 @@ void openHistory(void *ptr, int dogId){
 			// printf("Salió del while\n");
 			close(fd);
 
-			r = recv(clientsd, &fileSize, sizeof(int), 0);
+			r = recv(clientsd, &fileSize, sizeof(int), MSG_WAITALL);
 			if(r != sizeof(int)){
 				perror("Recv error");
 				exit(-1);
