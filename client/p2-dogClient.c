@@ -363,7 +363,6 @@ void searchReg(int sd){ //	Función que busca en dataDogs.dat las mascotas con e
   checkSend(sd, petName, NAME_SIZE, 0, "petName"); // Envía al servidor el nombre del registro a buscar
   int exists = 0;
   checkRecv(sd, &exists, sizeof(int), MSG_WAITALL, "exists"); // Recibe del servidor si el registro existe o no en dataDogs
-  printf("exists: %i\n", exists);
 
   if(!exists){
 		printf("%s\n", "Este registro no existe");
