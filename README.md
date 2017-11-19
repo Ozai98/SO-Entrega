@@ -7,4 +7,4 @@ Desarrollado por:
 * Yeliana Torres
 * David Hormaza 
 
-Para remitirse a la documentación, manual de uso de la aplicación y descarga de archivos haga clic [aquí](https://github.com/Ozai98/SO-Entrega/wiki#software-cliente-servidor-para-la-gesti%C3%B3n-de-una-veterinaria).  
+Para remitirse a la documentación, manual de uso de la aplicación y descarga de archivos haga clic [aquí](https://github.com/Ozai98/SO-Entrega/wiki).  
