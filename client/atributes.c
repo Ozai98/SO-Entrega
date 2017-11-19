@@ -65,27 +65,27 @@ void showDogTypeTableHead(){
 }
 
 //Función que imprime la tabla que muestra los nombres que coinciden con el campo introducido en la función de busqueda de un registro
-// void showDogTypeTable(void* p){
-// 	struct dogType* dog = p;
-// 	char auxName[NAME_SIZE/8] = "";
-// 	char auxType[TYPE_SIZE/8] = "";
-// 	char auxBreed[BREED_SIZE/8] = "";
-// 	int i=0;
-// 	int cantTab = 0;
-// 	char tab[1] = "\t";
-//
-// 	cantTab = NAME_SIZE/8 - strlen(dog->name)/8;
-// 	for(i=0; i<cantTab; i++)
-// 		strcat(auxName, tab);
-// 	cantTab = TYPE_SIZE/8 - strlen(dog->type)/8;
-// 	for(i=0; i<cantTab; i++)
-// 		strcat(auxType, tab);
-// 	cantTab = BREED_SIZE/8 - strlen(dog->breed)/8;
-// 	for(i=0; i<cantTab; i++)
-// 		strcat(auxBreed, tab);
-//
-// 	printf("%10i\t%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\t%i\n",dog->id, dog->position, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed, dog->next);
-// }
+void showDogTypeTable(void* p){
+	struct dogType* dog = p;
+	char auxName[NAME_SIZE/8] = "";
+	char auxType[TYPE_SIZE/8] = "";
+	char auxBreed[BREED_SIZE/8] = "";
+	int i=0;
+	int cantTab = 0;
+	char tab[1] = "\t";
+
+	cantTab = NAME_SIZE/8 - strlen(dog->name)/8;
+	for(i=0; i<cantTab; i++)
+		strcat(auxName, tab);
+	cantTab = TYPE_SIZE/8 - strlen(dog->type)/8;
+	for(i=0; i<cantTab; i++)
+		strcat(auxType, tab);
+	cantTab = BREED_SIZE/8 - strlen(dog->breed)/8;
+	for(i=0; i<cantTab; i++)
+		strcat(auxBreed, tab);
+
+	printf("%10i\t%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\t%i\n",dog->id, dog->position, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed, dog->next);
+}
 
 //Funcion que abre un archivo y captura errores
 FILE* checkfopen(const char *path, const char *mode){

@@ -59,7 +59,7 @@ int main(){
     newDog->next = 0;
 
     currPos = (int)ftell(fDataDogs);
-    currHash = htHashFunction(newDog->name);
+    currHash = (int)htHashFunction(newDog->name);
     if(hashTable[currHash] != -1){
       // El atributo siguiente es el primero de la estructura
       fseek(fDataDogs, hashTable[currHash], SEEK_SET);

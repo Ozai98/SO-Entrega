@@ -39,22 +39,22 @@ int main(int argc, char *argv[]){
   bzero(server.sin_zero, 8);
 
   serverSize = sizeof(struct sockaddr);
-  optval = 1; //Configura el puerto para su reutilización
+  optval = 1; // Configura el puerto para su reutilización
   if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval)) < 0)
-    error("setsockopt(SO_REUSEADDR) failed");
-  int r = connect(sd, (struct sockaddr*)&server, serverSize); //Se conecta con el servidor
+    perror("setsockopt(SO_REUSEADDR) failed");
+
+  int r = connect(sd, (struct sockaddr*)&server, serverSize); // Se conecta con el servidor
   if(r == -1){
     perror("Connect error");
     exit(-1);
   }
-	menu(sd); //Ejecuta el menu
 
-  close(sd); //Cierra la sockey
+	menu(sd); // Ejecuta el menu
+  close(sd); // Cierra la socket
 	return 0;
 }
 
-// Menú que despliega las opciones
-void menu(int sd){
+void menu(int sd){ // Menú que despliega las opciones
 	char input[32];
 	int num = 0, r;
 	printf("--------------------------------------------------\n");
@@ -74,17 +74,14 @@ void menu(int sd){
 		scanf("%32s", input);
     printf("Opcion %s: ", input);
 		num = input[0]-48;
+
 		if (strlen(input) != 1 || num < 1 || num > 5)
 			printf("%s\n", "El valor ingresado no es valido, intente de nuevo");
+
 	}while(strlen(input) != 1 || num < 1 || num > 5);
 
-  r = send(sd, &num, sizeof(int), 0);
-  if(r == -1){
-    perror("Send error\n");
-    exit(-1);
-  }
-
-	switch(num){
+  checkSend(sd, &num, sizeof(int), 0, "num"); // Envía la opción seleccionada al servidor
+  switch(num){ //Ejecuta la opción deseada
 		case 1:
 			printf("Ingresar registro\n");
 			addReg(sd);
@@ -99,7 +96,7 @@ void menu(int sd){
 			break;
 		case 4:
 			printf("Buscar registro\n");
-			searchReg(sd);
+			searchReg(sd);system("clear");
 			break;
 		case 5:
 			printf("Salir\n");
@@ -110,26 +107,25 @@ void menu(int sd){
 	}
 }
 
-//Función que reejecuta el menú
-void exeMenu(int sd){
+void exeMenu(int sd){ // Función que reejecuta el menú
   static struct termios newt, oldt;
   printf("\nPresione una tecla para continuar...");
-  tcgetattr( STDIN_FILENO, &oldt);  //Obteniendo la configuracion actual de la terminal
-  newt = oldt;        //Copiando la configuracion
+  tcgetattr( STDIN_FILENO, &oldt);  // Obteniendo la configuracion actual de la terminal
+  newt = oldt;        // Copiando la configuracion
 	//	Desactivando las banderas ECHO e ICANON
-	newt.c_lflag &= ~(ICANON | ECHO);  //Desactivando la bandera ICANON para no esperar un caracter especial al final
+	newt.c_lflag &= ~(ICANON | ECHO);  // Desactivando la bandera ICANON para no esperar un caracter especial al final
   newt.c_cc[VMIN] = 1;
-  tcsetattr( STDIN_FILENO, TCSANOW, &newt);//Configurando la terminal con los nuevos cambios
-	__fpurge(stdin);      //Limpiando el buffer de entrada
-  getchar();        //Esperando un caracter
-  tcsetattr( STDIN_FILENO, TCSANOW, &oldt);//Configurando la terminal a su forma original
+  tcsetattr( STDIN_FILENO, TCSANOW, &newt);// Configurando la terminal con los nuevos cambios
+	__fpurge(stdin);      // Limpiando el buffer de entrada
+  getchar();        // Esperando un caracter
+  tcsetattr( STDIN_FILENO, TCSANOW, &oldt);// Configurando la terminal a su forma original
 	printf("\n");
+  system("clear");
 	menu(sd);
 }
 
-// Función que añade un registro a al archivo
-void addReg(int sd){
-	char term;
+void addReg(int sd){ // Función que añade un registro a al archivo
+	char term; // Inicializando variables de adición
 	char petName[NAME_SIZE];
 	char type[TYPE_SIZE];
 	char breed[BREED_SIZE];
@@ -138,28 +134,26 @@ void addReg(int sd){
 	int height;
 	float weight;
 
-	int rightValue = 0;
-	int next;
-	int code = 0;
-	int i;
+	int rightValue = 0, next, code = 0, i;
 
-	//Captura de los datos de la mascota
-	printf("%s", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres,\nsi lo hace solo se guardaran los primeros 32: ");
+	// Captura de los datos de la mascota
+	printf("%s", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres,\nsi lo hace solo se guardaran los primeros 32: "); // Captura del nombre
 	getchar();
 	fgets(petName, NAME_SIZE, stdin);
 	petName[strlen(petName)-1]=0;
 	printf("Nombre ingresado: %s\n", petName);
 
-	printf("%s", "Ingrese el tipo de la mascota, este no debe superar los 32 caracteres \nsi lo hace solo se guardaran los primeros 32: ");
+	printf("%s", "Ingrese el tipo de la mascota, este no debe superar los 32 caracteres \nsi lo hace solo se guardaran los primeros 32: "); // Captura del tipo
 	fgets(type, NAME_SIZE, stdin);
 	type[strlen(type)-1]=0;
 	printf("Tipo ingresado: %s\n", type);
 
-	printf("%s","Ingrese la raza de la mascota, este no debe superar los 32 caracteres, \nsi lo hace solo se guardaran los primeros 32: ");
+	printf("%s","Ingrese la raza de la mascota, este no debe superar los 32 caracteres, \nsi lo hace solo se guardaran los primeros 32: "); // Captura de la raza
 	fgets(breed, NAME_SIZE, stdin);
 	breed[strlen(breed)-1]=0;
 	printf("Raza ingresada: %s\n", breed);
-	printf("%s", "Ingrese el sexo 'H' para Hembra o 'M' para Macho: ");
+
+	printf("%s", "Ingrese el sexo 'H' para Hembra o 'M' para Macho: "); // Captura del sexo
 	fflush(stdin);
 	scanf(" %c", &sex);
 	while(sex != 'H' && sex != 'M' && sex != 'm' && sex != 'h'){
@@ -168,7 +162,7 @@ void addReg(int sd){
 	}
 	printf("Sexo ingresado: %c\n", sex);
 
-	printf("Ingrese la edad de la mascota: ");
+	printf("Ingrese la edad de la mascota: "); // Captura de la edad
 	do{
 		getchar();
 		if(scanf("%d%c", &age, &term) != 2 || term != '\n')
@@ -178,7 +172,7 @@ void addReg(int sd){
 	}while(rightValue == 0);
 	printf("La edad introducida es: %d\n", age);
 
-	printf("Ingrese la altura de la mascota (En cm): ");
+	printf("Ingrese la altura de la mascota (En cm): "); // Captura de la altura
 	rightValue = 0;
 	do{
 		if(scanf(" %d%c", &height, &term) != 2 || term != '\n')
@@ -188,7 +182,7 @@ void addReg(int sd){
 	}while(rightValue == 0);
 	printf("La altura introducida es: %d\n", height);
 
-	printf("Ingrese el peso de la mascota (En kg): ");
+	printf("Ingrese el peso de la mascota (En kg): "); // Captura del peso
 	rightValue = 0;
 	do{
 		if(scanf(" %f%c", &weight, &term) != 2 || term != '\n')
@@ -198,7 +192,7 @@ void addReg(int sd){
 	}while(rightValue == 0);
 	printf("El peso introducido es: %f\n", weight);
 
-	//Creación de la estructura
+	// Creación de la estructura
 	struct dogType* newDog = malloc(sizeof(struct dogType));
 	strcpy(newDog->name, petName);
 	strcpy(newDog->type, type);
@@ -210,254 +204,167 @@ void addReg(int sd){
 	newDog->next = 0;
   newDog->id = 0;
   newDog->position = 0;
-	//Muestra la estructura creada
+	// Muestra la estructura creada
 	showDogType(newDog);
-
-  int r = send(sd, newDog, sizeof(struct dogType), 0);
-  if(r == -1){
-    perror("Send error\n");
-    exit(-1);
-  }
-	//Libera el espacio en memoria de la estructura cierra el archivo dataDogs.dat y reejecuta el menú
-	free(newDog);
-	// printf("Registro añadido exitosamente.\n");
+  checkSend(sd, newDog, sizeof(struct dogType), 0, "newDog"); // Envia la estructura creada al servidor
+	free(newDog); // Libera el espacio en memoria de la estructura y reejecuta el menú
 	exeMenu(sd);
 }
-//	Función que permite ver un registro de dataDogs.dat
-void seeReg(int sd){
+
+void seeReg(int sd){ //	Función que permite ver un registro de dataDogs.dat
+  //Inicializa variables de visualiazación
 	int numberReg;
 	int value = 0;
 	int totalSize;
 	char ans;
   int resp;
+  char ch;
 
-
-  int r = recv( sd, &totalSize, sizeof(int), MSG_WAITALL);
-  if(r != sizeof(int)){
-    perror("Recv error");
-    exit(-1);
-  }
-	printf("El número de registros es de: %i\n",totalSize);
-  // El ciclo no es reactivo
+  checkRecv( sd, &totalSize, sizeof(int), MSG_WAITALL, "totalSize"); // Recibe el tamaño del archivo dataDogs desde el servidor
+  printf("El número de registros es de: %i\n",totalSize);
 	do{
 		printf("%s\n", "Ingrese el número del registro a consultar");
-    char ch;
 		scanf("%d", &numberReg);
-		//Si el numero ingresado se sale del rango de registros el registro solicitado no existe
-		if(numberReg < 1 || numberReg > totalSize){
+		if(numberReg < 1 || numberReg > totalSize){ // Si el numero ingresado se sale del rango de registros el registro solicitado no existe
 			printf("%s\n", "Este registro no existe");
       scanf(" %c", &ch);
 		}else{
 			numberReg -= 1;
-      r = send(sd, &numberReg, sizeof(int), 0);
-      if(r == -1){
-        perror("Send error\n");
-        exit(-1);
-      }
-			//Imprime el registro solicitado
+      checkSend(sd, &numberReg, sizeof(int), 0, "numberReg"); //Envía al servidor el número del registro a mostrar
 			value = 1;
-			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType));
-      r = recv(sd, newDog, sizeof(struct dogType), MSG_WAITALL);
-      if(r != sizeof(struct dogType)){
-        perror("Recv error");
-        exit(-1);
-      }
-      showDogType(newDog);
-      showFullDogType(newDog);
-      free(newDog);
+			struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType)); // Reserva espacio para la estructura temporal
+      checkRecv(sd, newDog, sizeof(struct dogType), MSG_WAITALL, "newDog"); //Recibe el registro a mostrar desde el servidor
+      showDogType(newDog); // Imprime el registro solicitado
+      free(newDog); // Libera la estructura temporal
       printf("Consulta de registro exitosa\n");
 
       printf("%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
 			scanf(" %c", &ans);
 
-      r = send(sd, &ans, sizeof(char), 0);
-      if(r == -1){
-        perror("Send error\n");
-        exit(-1);
-      }
-			//Si la respuesta es afirmativa, abre la historia clinima
-			if(ans == 's' || ans == 'S'){
-        r = recv(sd, &resp, sizeof(int), MSG_WAITALL);
-        if(r != sizeof(int)){
-          perror("Recv error");
-          exit(-1);
-        }
-      //  printf("resp %i\n", resp);
+      checkSend(sd, &ans, sizeof(char), 0, "ans"); // Envía la respuesta al servidor
+			if(ans == 's' || ans == 'S'){ // Si la respuesta es afirmativa, abre la historia clinima
+        checkRecv(sd, &resp, sizeof(int), MSG_WAITALL, "resp"); // Recibe del servidor si la historia clínica solicitada, existe y no esta abierta por otro usuario,
+                                                        // si existe y no esta abierta, o si no existe
 
-        // file not found
-        if(resp == 0){
+        if(resp == 0){ // Si la historia clínica no existe en el servidor
           int fileSize, len;
           char buffer[BUFSIZ];
           char file_name[12];
           sprintf(file_name, "%d.txt", (numberReg+1));
-          //printf("%s\n", file_name);
-          FILE* myFile = checkfopen(file_name, "w");
+          FILE* myFile = checkfopen(file_name, "w"); // Crea la historia clínica en el cliente para que la edite
           checkfclose(myFile, file_name);
           sprintf(file_name, "gedit %d.txt", (numberReg+1));
-          system(file_name);
+          system(file_name); // Abre la historia clínica para su edición
 
           sprintf(file_name, "%d.txt", (numberReg+1));
           int fd = open(file_name, O_RDONLY);
 
-	        struct stat file_stat;
+	        struct stat file_stat; // Obtiene el tamaño de la historia clínica
           if (fstat(fd, &file_stat) < 0){
     				perror("fstat error\n");
     				exit(-1);
     			}
           fileSize = file_stat.st_size;
-        //  printf("File size %i\n", fileSize);
-          r = send(sd, &fileSize, sizeof(int), 0);
-          if(r == -1){
-            perror("send error");
-            exit(-1);
-          }
+
+          checkSend(sd, &fileSize, sizeof(int), 0, "fileSize"); // Envía el tamaño de la historia clínica al servidor
+
           off_t offset = 0;
           int sent_bytes = 0;
           int remain_data = fileSize;
-          while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
-          //  printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+          while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){ // Envía la historia clínica al servidor
             remain_data -= sent_bytes;
-          //  printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
           }
-          //printf("Salió del while\n");
 			    close(fd);
-          remove(file_name);
+          remove(file_name); // Elimina la historia clínica del cliente
         }
-        //  file exists
-        else if(resp == 1){
+
+        else if(resp == 1){ //  Si la historia clínica existe en el servidor
           int fileSize, len;
           char buffer[BUFSIZ];
           char file_name[12];
           sprintf(file_name, "%d.txt", (numberReg+1));
-          //printf("%s\n", file_name);
           FILE* myFile = checkfopen(file_name, "w");
-          r = recv(sd, &fileSize, sizeof(int), MSG_WAITALL);
-          if(r != sizeof(int)){
-            perror("Recv error");
-            exit(-1);
-          }
-          // printf("fileSize%i\n", fileSize);
+
+          checkRecv(sd, &fileSize, sizeof(int), MSG_WAITALL, "fileSize"); // Recibe del servidor el tamaño de la historia clínica
+
           int remain_data = fileSize;
-          while ((remain_data > 0) && ((len = recv(sd, buffer, BUFSIZ, 0)) > 0)){
-            // printf("in while\n");
+          while ((remain_data > 0) && ((len = recv(sd, buffer, BUFSIZ, 0)) > 0)){ // Recibe la historia clínica desde el servidor
             fwrite(buffer, sizeof(char), len, myFile);
             remain_data -= len;
-            // printf("Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
           }
-          //printf("Salió del while\n");
           checkfclose(myFile, file_name);
+
           sprintf(file_name, "gedit %d.txt", (numberReg+1));
-          system(file_name);
-
-
+          system(file_name); // Abre la historia para su edición
           sprintf(file_name, "%d.txt", (numberReg+1));
           int fd = open(file_name, O_RDONLY);
 
-	        struct stat file_stat;
+	        struct stat file_stat; // Calcula el tamaño de la historia clínica editada
           if (fstat(fd, &file_stat) < 0){
     				perror("fstat error\n");
     				exit(-1);
     			}
+
           fileSize = file_stat.st_size;
-          r = send(sd, &fileSize, sizeof(int), 0);
-          if(r == -1){
-            perror("send error");
-            exit(-1);
-          }
-    		//printf("File size %i\n", (int)file_stat.st_size);
-    			fileSize = (int)file_stat.st_size;
+
+          checkSend(sd, &fileSize, sizeof(int), 0, "fileSize"); // Envía el nuevo tamaño al servidor
+      		fileSize = (int)file_stat.st_size;
           off_t offset = 0;
           int sent_bytes = 0;
           remain_data = fileSize;
-          while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
-          //  printf("1. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
+          while (((sent_bytes = sendfile(sd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){ // Envía la historia clínica editada al servidor
             remain_data -= sent_bytes;
-            //printf("2. Server sent %d bytes from file's data, offset is now : %li and remaining data = %d\n", sent_bytes, offset, remain_data);
           }
-          //printf("Salió del while\n");
 			    close(fd);
-          remove(file_name);
+          remove(file_name); // Elimina la historia clínica del cliente
         }
-        //  file editing
-        else if(resp == 2){
+
+        else if(resp == 2){ //  Si el archivo esta abierto por otro usuario
           printf("Archivo en uso, intente más tarde\n");
         }
-        // //abrir
-        // sprintf(file_name_2, "gedit %d.txt", (numberReg+1));
-				// system(file_name_2);
 			}
-
 			exeMenu(sd);
 		}
 	}while (value == 0);
 }
-// //	Función que elimina un registro de datadogs.dat
-void deleteReg(int sd){
-  int totalSize, value = 0, i = 0, filePointer = 0, code = 0, delReg = 0, success = 0;
 
-  int r = recv( sd, &totalSize, sizeof(int), MSG_WAITALL);
-  if(r != sizeof(int)){
-    perror("Recv error");
-    exit(-1);
-  }
+void deleteReg(int sd){ // Función que elimina un registro de datadogs.dat
+  int totalSize, value = 0, i = 0, filePointer = 0, code = 0, delReg = 0, success = 0;
+  checkRecv( sd, &totalSize, sizeof(int), MSG_WAITALL, "totalSize"); // Recibe el tamaño de datadogs desde el servidor
   printf("El número de registros es de: %i\n",totalSize);
 
   do{
     printf("%s\n", "Ingrese la posición del registro a eliminar");
   	scanf("%i", &delReg);
-  	if(delReg < 1 || delReg > totalSize){
+  	if(delReg < 1 || delReg > totalSize){ // Si el número ingresado se sale del rango de dataDogs el registro no existe
   		printf("%s\n", "El registro que desea eliminar no existe");
   	}else{
       value = 1;
   		delReg-=1;
-      r = send(sd, &delReg, sizeof(int), 0);
-      if(r == -1){
-        perror("Send error\n");
-        exit(-1);
-      }
-
-      struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
-      r = recv(sd, currDog, sizeof(struct dogType), MSG_WAITALL);
-      if(r != sizeof(struct dogType)){
-        perror("Recv error");
-        exit(-1);
-      }
-      showDogType(currDog);
+      checkSend(sd, &delReg, sizeof(int), 0, "delReg"); // Envía el número del registro a eliminar al servidor
+      struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType)); // Reserva el espacio para la estructura auxiliar
+      checkRecv(sd, currDog, sizeof(struct dogType), MSG_WAITALL, "currDog"); // Recibe la estructura a eliminar
+      showDogType(currDog); //Muestra la estructura a eliminar
       free(currDog);
       printf("%s\n","Espere por favor");
-      int success;
-      r = recv(sd, &success, sizeof(int), MSG_WAITALL);
-      if(r != sizeof(int)){
-        perror("Recv error");
-        exit(-1);
-      }
+      checkRecv(sd, &success, sizeof(int), MSG_WAITALL, "success"); //Recibe la confirmación de que el proceso de eliminación en el servidor ha terminado
       printf("%s\n", "Eliminación exitosa");
   	}
   }while(value == 0);
 	exeMenu(sd);
 }
-//	Función que busca en dataDogs.dat las mascotas con el mismo nombre
-void searchReg(int sd){
+
+void searchReg(int sd){ //	Función que busca en dataDogs.dat las mascotas con el mismo nombre
 	char petName[NAME_SIZE];
-  printf("Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32: ");
+  printf("Ingrese el nombre de la mascota, este no debe superar los 32 caracteres, si lo hace solo se guardaran los primeros 32: "); // Recibe el nombre del registro a buscar
 	getchar();
 	fgets(petName, NAME_SIZE, stdin);
 	petName[strlen(petName)-1]=0;
-
-  int r = send(sd, petName, NAME_SIZE, 0);
-  if(r == -1){
-    perror("Send error\n");
-    exit(-1);
-  }
-
+  checkSend(sd, petName, NAME_SIZE, 0, "petName"); // Envía al servidor el nombre del registro a buscar
   int exists = 0;
-  r = recv(sd, &exists, sizeof(int), MSG_WAITALL);
-  printf("R: %i\n", r);
-  if(r != sizeof(int)){
-    perror("Recv error exists");
-    exit(-1);
-  }
+  checkRecv(sd, &exists, sizeof(int), MSG_WAITALL, "exists"); // Recibe del servidor si el registro existe o no en dataDogs
   printf("exists: %i\n", exists);
+
   if(!exists){
 		printf("%s\n", "Este registro no existe");
     exeMenu(sd);
@@ -469,52 +376,16 @@ void searchReg(int sd){
   int something;
   int r2;
   do{
-    // printf("Esperando hasDog\n");
-    r = recv(sd, &hasDog, sizeof(int), MSG_WAITALL);
-    if(r != sizeof(int)){
-      perror("Recv error has Dog");
-      exit(-1);
-    }
-    // printf("Terminando hasDog\n");
+    checkRecv(sd, &hasDog, sizeof(int), MSG_WAITALL, "hasDog"); //Recibe
     if (hasDog){
       exists = 1;
       if (hasDog == 2)
         showDogTypeTableHead();
       something = sizeof(struct dogType);
-      // printf("Esperando while\n");
-      // printf("something (%i)\n", something);
-
-
-      recv(sd, newDog, sizeof(struct dogType), MSG_WAITALL);
-      // checkRecv(sd, newDog, sizeof(struct dogType), 0, "newDog");
-      // while((r = recv(sd, newDog+sizeof(struct dogType)-something, sizeof(struct dogType), 0)) != something){
-      //   if(r == -1){
-      //     perror("recv error\n");
-      //     exit(-1);
-      //   }
-      //   something -= r;
-      // }
-
-      // do{
-      //   r = recv(sd, newDog, sizeof(struct dogType), 0);
-      //   // printf("R: (%i)\n", r);
-      //   r2 = send(sd, &r, sizeof(int), 0);
-      //   if(r2 == -1){
-      //     perror("Send error\n");
-      //     exit(-1);
-      //   }
-      // }while(r != sizeof(struct dogType));
-
-      // printf("Terminando while\n");
-      // r = recv(sd, newDog, sizeof(struct dogType), 0);
-      // if(r != sizeof(struct dogType)){
-      //   printf("r (%i), dogType (%lu)\n", r, sizeof(struct dogType));
-      //   perror("Recv error dog");
-      //   exit(-1);
-      // }
+      checkRecv(sd, newDog, sizeof(struct dogType), MSG_WAITALL, "newDog"); //Recibe la estructura que tiene el nombre buscadi
       showDogTypeTable(newDog);
     }
-  }while(hasDog);
+  }while(hasDog); // Mientras hayan coincidencias en el nombre
 
   if(!exists){
 		printf("%s\n", "Este registro no existe");

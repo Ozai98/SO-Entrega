@@ -4,33 +4,33 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-//Constantes de tamaño
+// Constantes de tamaño
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
 #define BREED_SIZE 16
 #define STRUCTURES_NUMBER 1e+7
 #define HASH_TABLE_SIZE 2500
-//Constantes de nombre de archivo
+// Constantes de nombre de archivo
 #define NOMBRES_MASCOTAS_PATH "nombresMascotas.txt"
 #define PET_NAMES_PATH "petNames.dat"
 #define DATA_DOGS_PATH "dataDogs.dat"
 #define CURRENT_ID_PATH "currentId.dat"
 #define TEMP_DATA_DOGS_PATH "tempDataDogs.dat"
 
-//Declaración de la estructura
+// Declaración de la estructura
 struct dogType{
-	int next; //Posición de la siguiente ocurrencia de la hash de la mascota en dataDogs
-	int position; //Posición de la estructura en dataDogs
-	unsigned int id; //Id de la mascota
-	char name[NAME_SIZE]; //Nombre de la mascota
-	char type[TYPE_SIZE]; //Tipo de la mascota
-	unsigned short age; //Edad de la mascota
-	char breed[BREED_SIZE]; //Raza de la mascota
-	unsigned short height; //Altura de la mascota
-	float weight; //Peso de la mascota
-	char gender; //Sexo de la mascota
+	int next; // Posición de la siguiente ocurrencia de la hash de la mascota en dataDogs
+	int position; // Posición de la estructura en dataDogs
+	unsigned int id; // Id de la mascota
+	char name[NAME_SIZE]; // Nombre de la mascota
+	char type[TYPE_SIZE]; // Tipo de la mascota
+	unsigned short age; // Edad de la mascota
+	char breed[BREED_SIZE]; // Raza de la mascota
+	unsigned short height; // Altura de la mascota
+	float weight; // Peso de la mascota
+	char gender; // Sexo de la mascota
 };
-//Instanciación de las funciones
+// Instanciación de las funciones
 void showDogType(void *p);
 void showDogTypeTableHead();
 void showDogTypeTable(void* p);
@@ -104,29 +104,24 @@ int checkfclose(FILE* stream, char* path){// Funcion que cierra un archivo y cap
   }
 }
 
-ssize_t checkSend(int socketsd, const void *buf, size_t len, int flags, char* message){// Funcion que envía un dato y captura errores
-	ssize_t remain_data = len, r;
-	while((r = send(socketsd, buf+len-remain_data, len, 0)) != remain_data){
-		if(r == -1){
-			char messageRet[250];
-      sprintf(messageRet, "send error %lu of %lu bytes sent of %s\n", len-remain_data, len, message);
-			perror(messageRet);
-			exit(-1);
-		}
-		remain_data -= r;
+ssize_t checkSend(int socketsd, const void *buf, size_t len, int flags, char* message){ // Funcion que envía un dato y captura errores
+	ssize_t r = send(socketsd, buf, len, flags);
+	if(r == -1){
+		char messageRet[250];
+		sprintf(messageRet, "send error %lu of %lu bytes sent of %s\n", r, len, message);
+		perror(messageRet);
+		exit(-1);
 	}
-	return remain_data;
+	return r;
 }
 
-ssize_t checkRecv(int sockfd, void *buf, size_t len, int flags, char* message){ //Funcion que recibe un dato y captura errores
-	ssize_t remain_data = len, r;
-	while((r = recv(sockfd, buf+len-remain_data, len, 0)) != remain_data){
-		if(r == -1){
-			char messageRet[250];
-      sprintf(messageRet, "recv error %lu of %lu bytes received of %s\n", len-remain_data, len, message);
-			perror(messageRet);
-			exit(-1);
-		}
+ssize_t checkRecv(int sockfd, void *buf, size_t len, int flags, char* message){ // Funcion que recibe un dato y captura errores
+	ssize_t r = recv(sockfd, buf, len, flags);
+	if(r == -1){
+		char messageRet[250];
+    sprintf(messageRet, "recv error %lu of %lu bytes received of %s\n", r, len, message);
+		perror(messageRet);
+		exit(-1);
 	}
-	return remain_data;
+	return r;
 }

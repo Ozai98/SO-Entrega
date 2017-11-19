@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 void htInit(int* hashTable);
-int htHashFunction(char* str);
+unsigned long htHashFunction(char* str);
 void htLoad(int* hashTable);
 int htSearch(int* hashTable, char* name);
 
@@ -13,27 +13,15 @@ void htInit(int* hashTable){// Función que inicializa la hashTable
 		hashTable[i] = -1;
 }
 
-
-int htHashFunction(char* str){// Función que calcula la función hash al parámetro str
-	int sum = 0, i = 0;
-	for(i = 0; i < strlen(str); i++){
-		sum += tolower(str[i]) * (i + 1);
-		sum %= HASH_TABLE_SIZE;
+unsigned long htHashFunction(char *str){
+  unsigned long c, hash = 5381;
+	int i;
+  for(i=0; i<strlen(str); i++){
+		c = tolower(*str++);
+    hash = (hash << 5) + hash + c; /* hash * 33 + c */
 	}
-	return sum;
+  return hash%HASH_TABLE_SIZE;
 }
-// unsigned long htHashFunction(char *str){
-//   unsigned long c, hash = 5381;
-// 	int i;
-//   for(i=0; i<strlen(str); i++){
-// 		c = tolower(*str++);
-//     hash = (hash << 5) + hash + c; /* hash * 33 + c */
-// 	}
-//   return hash%HASH_TABLE_SIZE;
-// }
-
-
-
 
 void htLoad(int* hashTable){// Función que carga la hashTable con los registros de dataDogs.dat
 	int i = 0, j = 0, code = 0, filePointer = 0, count = 0;  // Inicializar variables a usar
