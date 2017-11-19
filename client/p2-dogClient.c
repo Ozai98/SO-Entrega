@@ -3,25 +3,15 @@
 #include <ctype.h>
 #include <termios.h>
 #include <stdio_ext.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
 #include <arpa/inet.h>
-
 #include <string.h>
-#include <ctype.h>
-
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 #include <fcntl.h>
 
-#define PORT 3536
+#define PORT 3535
 
 
 //Declaración de las funciones
@@ -33,7 +23,7 @@ void deleteReg(int sd);
 void searchReg(int sd);
 
 int main(int argc, char *argv[]){
-  int sd = socket(AF_INET, SOCK_STREAM, 0);
+  int sd = socket(AF_INET, SOCK_STREAM, 0); //Crea una socket
   int optval;
   if(sd == -1){
     perror("Socket error\n");
@@ -42,25 +32,24 @@ int main(int argc, char *argv[]){
   struct sockaddr_in server;
   socklen_t serverSize;
 
-  // Assigning a name to a socket
+  // Asigna el nombre a la socket
   server.sin_family = AF_INET;
   server.sin_port = htons(PORT);
   server.sin_addr.s_addr = inet_addr(argv[1]);
   bzero(server.sin_zero, 8);
 
   serverSize = sizeof(struct sockaddr);
-  optval = 1;
+  optval = 1; //Configura el puerto para su reutilización
   if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval)) < 0)
-        perror("setsockopt(SO_REUSEADDR) failed");
-
-  int r = connect(sd, (struct sockaddr*)&server, serverSize);
+    error("setsockopt(SO_REUSEADDR) failed");
+  int r = connect(sd, (struct sockaddr*)&server, serverSize); //Se conecta con el servidor
   if(r == -1){
     perror("Connect error");
     exit(-1);
   }
-	menu(sd);
+	menu(sd); //Ejecuta el menu
 
-  close(sd);
+  close(sd); //Cierra la sockey
 	return 0;
 }
 
