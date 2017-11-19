@@ -2,14 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 //Constantes de tamaño
 #define NAME_SIZE 32
 #define TYPE_SIZE 32
 #define BREED_SIZE 16
-// #define STRUCTURES_NUMBER 100000
 #define STRUCTURES_NUMBER 1e+7
 #define HASH_TABLE_SIZE 2500
 //Constantes de nombre de archivo
@@ -19,21 +17,21 @@
 #define CURRENT_ID_PATH "currentId.dat"
 #define TEMP_DATA_DOGS_PATH "tempDataDogs.dat"
 
-//Declaración de la estructura
+//Declaración de la estructura dogType
 struct dogType{
-	int next;
-	int position;
-	unsigned int id;
-	char name[NAME_SIZE];
-	char type[TYPE_SIZE];
-	unsigned short age;
-	char breed[BREED_SIZE];
-	unsigned short height;
-	float weight;
-	char gender;
+	int next; // Entero que contiene la referencia a la siguiente estructura con el mismo nombre dentro de dataDogs.dat
+	int position; // Posición de la estructura en dataDogs.dat
+	unsigned int id; // ID de la estructura
+	char name[NAME_SIZE]; //Nombre de la estructura
+	char type[TYPE_SIZE]; // Tipo de mascota de la estructura
+	unsigned short age; // Edad de la mascota de la estructura
+	char breed[BREED_SIZE]; // Raza de la mascota de la estructura
+	unsigned short height; // Altura de la mascota de la estructura
+	float weight; // Peso de la mascota de la estructura
+	char gender; // Sexo de la mascota de la estructura
 };
 
-//Función que imprime una estructura mascota
+//Función que imprime una estructura mascota sin next
 void showDogType(void *p){
 	struct dogType *dog = p;
 	printf("Id:\t%u\n",dog->id);
@@ -65,6 +63,7 @@ void showFullDogType(void *p){
 void showDogTypeTableHead(){
 	printf("\tID\tPOSICIÓN\tEDAD\tALTURA\tPESO\tGENERO\tNOMBRE\t\t\t\tTIPO\t\t\t\tRAZA\tNEXT\n");
 }
+
 //Función que imprime la tabla que muestra los nombres que coinciden con el campo introducido en la función de busqueda de un registro
 void showDogTypeTable(void* p){
 	struct dogType* dog = p;
@@ -87,6 +86,7 @@ void showDogTypeTable(void* p){
 
 	printf("%10i\t%10i\t%3hu\t%3hu\t%2.2f\t%c\t%s%s%s%s%s\t%i\n",dog->id, dog->position, dog->age, dog->height, dog->weight, dog->gender, dog->name, auxName, dog->type, auxType, dog->breed, dog->next);
 }
+
 //Funcion que abre un archivo y captura errores
 FILE* checkfopen(const char *path, const char *mode){
   FILE* fd = fopen(path, mode);
@@ -110,8 +110,7 @@ int checkfclose(FILE* stream, char* path){
     exit(-1);
   }
 }
-// TODO: Create checkfwrite, checkfread, checkmalloc, checkfree
-
+//Función que envía un dato y captura errores
 ssize_t checkSend(int socketsd, const void *buf, size_t len, int flags, char* message){
 	ssize_t remain_data = len, r;
 	while((r = send(socketsd, buf+len-remain_data, len, 0)) != remain_data){
@@ -126,6 +125,7 @@ ssize_t checkSend(int socketsd, const void *buf, size_t len, int flags, char* me
 	return remain_data;
 }
 
+//Función que recibe un dato y captura errores
 ssize_t checkRecv(int sockfd, void *buf, size_t len, int flags, char* message){
 	ssize_t remain_data = len, r;
 	while((r = recv(sockfd, buf+len-remain_data, len, 0)) != remain_data){
