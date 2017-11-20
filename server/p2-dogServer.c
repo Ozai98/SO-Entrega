@@ -4,18 +4,29 @@
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 #include <fcntl.h>
+#include <semaphore.h>
 #include "hashTable.c"
 // Constantes de operación
 #define BACKLOG 2
 #define PORT 3535
 #define SERVER_LOG_PATH "ServerDogs.log"
 #define NUM_THREADS 32
+#define MAX_PROCCESS 1
+#define SEMAPHORE_NAME "semaphore_name"
+#define SEMAPHORE_OPTION 1
+#define MUTEX_OPTION 2
+#define PIPE_OPTION 3
+
 
 struct threadArgs{ // Estructura que contiene el descriptor y la IP de un cliente entrante
 	int clientsd;
 	char ip[INET6_ADDRSTRLEN];
 };
-
+int critialSectionControlOption = SEMAPHORE_OPTION;
+sem_t *semaphore; // Variable semaforo de control para las secciones criticas
+static pthread_mutex_t *mymutex;
+int pipefd[2];
+char guard = 'T';
 // Instanciación de las funciones
 int hashTable[HASH_TABLE_SIZE];
 void* menu(void *ptr);
@@ -38,11 +49,11 @@ int main(){
 	htLoad(hashTable); // Carga la hashTable
 	printf("%s\n","Servidor listo");
 	serversd = socket(AF_INET, SOCK_STREAM, 0); // Crea una socket
-
   if(serversd == -1){
     perror("Socket error\n");
     exit(-1);
   }
+
 
   // Configura la socket
   server.sin_family = AF_INET;
@@ -58,7 +69,6 @@ int main(){
 
 	//Nombra la socket
   r = bind(serversd, (struct sockaddr*)&server, serverSize);
-
 	if(r == -1){
     perror("Bind error\n");
     exit(-1);
@@ -69,8 +79,40 @@ int main(){
 	if(r == -1){
     perror("Listen error\n");
     exit(-1);
-  }
+	}
 
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		sem_unlink(SEMAPHORE_NAME);
+		// if(sem_unlink(SEMAPHORE_NAME) == -1){
+		// 	perror("Semaphore unlink error");
+		// 	exit(-1);
+		// }
+		semaphore = sem_open(SEMAPHORE_NAME, O_CREAT, 0700, MAX_PROCCESS);
+		if(semaphore == SEM_FAILED){
+			perror("Semaphore create error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		mymutex = (void*)malloc(sizeof(pthread_mutex_t));
+		if(mymutex == NULL){
+			perror("Semaphore create error");
+			exit(-1);
+		}
+		if(pthread_mutex_init(mymutex, NULL) != 0){
+			perror("pthread_mutex_init error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == PIPE_OPTION){
+		if(pipe(pipefd) != 0) {
+			perror("pipe error");
+			exit(-1);
+		}
+		printf("%c\n", guard);
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+			perror("write error");
+			exit(-1);
+		}
+	}
 	for(i = 0; i < NUM_THREADS; i++){
 	  // Acepta la conexión entrante
 		int clientsd = accept(serversd, (struct sockaddr*)&client[i], (socklen_t*)&clientSize);
@@ -92,18 +134,16 @@ int main(){
       exit(-1);
     }
 	}
- 	// Cierra los hilos cuando han finalizado las tareas
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		sem_close(semaphore);
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		if(pthread_mutex_destroy(mymutex) != 0){
+			perror("pthread_mutex_destroy error");
+			exit(-1);
+		}
+		free(mymutex);
+	}else if(critialSectionControlOption == PIPE_OPTION){
 
-	for(i = 0; i<NUM_THREADS; i++){
-		r = pthread_join(threads[i], NULL);
-
-		if(r != 0){
-        perror("pthread_join error");
-        exit(-1);
-    }
-
-		close(args[i]->clientsd);
-		free(args[i]);
 	}
   close(serversd);
 }
@@ -129,6 +169,7 @@ void *menu(void* ptr){
       showSearch(args);
 			break;
 		case 5:
+			close(args->clientsd);
 			free(args);
 			break;
 		default:
@@ -180,6 +221,23 @@ void recvNewReg(void *ptr){
 	checkfclose(fptc, CURRENT_ID_PATH);
 	int code = (int)htHashFunction(newDog->name); // Calcula la hash de la nueva mascota
 	int next = hashTable[code]; // Obtiene la posición del anterior con la misma hash
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		if(sem_wait(semaphore) == -1){
+			perror("Semaphore wait error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		if(pthread_mutex_lock(mymutex) != 0){
+			perror("pthread_mutex_lock error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == PIPE_OPTION){
+		char result;
+		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) {
+			perror("read error");
+			exit(-1);
+		}
+	}
   FILE* fptr = checkfopen(DATA_DOGS_PATH, "r+");
 
 	if(next == -1){ // Si la hash del nombre no tiene entradas, crea una entrada con la posición de la nueva mascota
@@ -210,6 +268,26 @@ void recvNewReg(void *ptr){
   free(newDog);
   free(currDog);
 	checkfclose(fptr, DATA_DOGS_PATH); // Cierra dataDogs
+
+	// printf("sleep\n");
+	// sleep(10);
+	// printf("end\n");
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		if(sem_post(semaphore) == -1){
+			perror("Semaphore post error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		if(pthread_mutex_unlock(mymutex) != 0){
+			perror("pthread_mutex_unlock error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == PIPE_OPTION){
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+			perror("write error");
+			exit(-1);
+		}
+	}
 	generateLog("Inserción", args->ip, registry, "Sin cadena de busqueda"); // Genera el log de la inserción
 	menu(args);
 }
@@ -251,6 +329,23 @@ void recvDeleteReg(void *ptr){
 	char returnedDog[10];
 	bzero(consultedDog, (int)sizeof(consultedDog));
 	bzero(returnedDog, (int)sizeof(returnedDog));
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		if(sem_wait(semaphore) == -1){
+			perror("Semaphore wait error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		if(pthread_mutex_lock(mymutex) != 0){
+			perror("pthread_mutex_lock error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == PIPE_OPTION){
+		char result;
+		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) {
+			perror("read error");
+			exit(-1);
+		}
+	}
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r"); // Abre dataDogs
 	fseek(dataDogs, 0, SEEK_END);
 	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
@@ -275,14 +370,12 @@ void recvDeleteReg(void *ptr){
 			currDog->position -= 1;
 
 		// Actualiza los next de las estructuras que sigan
-		if(currDog->next == 0){
-		// En caso de que el registro que se quiera eliminar sea el primero (numReg = 0)
-		}else if(currDog->next > numReg*sizeof(struct dogType)){
-			currDog->next -= sizeof(struct dogType);
+		if(currDog->next > numReg*sizeof(struct dogType)){
+			currDog->next = currDog->next==0 ? 0 : currDog->next - sizeof(struct dogType);
 		}else if(currDog->next == numReg*sizeof(struct dogType)){
 			fseek(dataDogs, currDog->next, SEEK_SET);
 			fread(&currDog->next, sizeof(int), 1, dataDogs);
-			currDog->next -= sizeof(struct dogType);
+			currDog->next = currDog->next==0 ? 0 : currDog->next - sizeof(struct dogType);
 			fseek(dataDogs, filePointer + sizeof(struct dogType), SEEK_SET);
 		}
 		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
@@ -293,6 +386,25 @@ void recvDeleteReg(void *ptr){
 	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
 	remove(DATA_DOGS_PATH); // Elimina dataDogs renombra tempDataDogs como dataDogs
 	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
+	// printf("sleep\n");
+	// sleep(10);
+	// printf("end\n");
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		if(sem_post(semaphore) == -1){
+			perror("Semaphore post error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		if(pthread_mutex_unlock(mymutex) != 0){
+			perror("pthread_mutex_unlock error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == PIPE_OPTION){
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+			perror("write error");
+			exit(-1);
+		}
+	}
 
 	htInit(hashTable); // Recarga la hash table
 	htLoad(hashTable);
@@ -321,7 +433,23 @@ void showSearch(void *ptr){
 		menu(args);
 		return;
 	}
-
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		if(sem_wait(semaphore) == -1){
+			perror("Semaphore wait error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		if(pthread_mutex_lock(mymutex) != 0){
+			perror("pthread_mutex_lock error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == PIPE_OPTION){
+		char result;
+		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) {
+			perror("read error");
+			exit(-1);
+		}
+	}
 	// Siempre tendrá al menos un Valor
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r"); //Abre dataDogs
 	struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType)); // Reserva el espacio de la estructura auxiliar
@@ -359,6 +487,25 @@ void showSearch(void *ptr){
 	generateLog("Busqueda", args->ip, "Múltiples", name); // Genera el log de la búsqueda
 	free(newDog); // Libera la estructura auxiliar
 	checkfclose(dataDogs, DATA_DOGS_PATH); // Cierra dataDogs
+	// printf("sleep\n");
+	// sleep(10);
+	// printf("end\n");
+	if(critialSectionControlOption == SEMAPHORE_OPTION){
+		if(sem_post(semaphore) == -1){
+			perror("Semaphore post error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == MUTEX_OPTION){
+		if(pthread_mutex_unlock(mymutex) != 0){
+			perror("pthread_mutex_unlock error");
+			exit(-1);
+		}
+	}else if(critialSectionControlOption == PIPE_OPTION){
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+			perror("write error");
+			exit(-1);
+		}
+	}
 	menu(args);
 }
 
