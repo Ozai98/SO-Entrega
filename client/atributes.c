@@ -34,15 +34,15 @@ struct dogType{
 //Función que imprime una estructura mascota sin next
 void showDogType(void *p){
 	struct dogType *dog = p;
-	printf("Id:\t%u\n",dog->id);
-  printf("Posición:\t%u\n",dog->position);
-  printf("Nombre:\t%s\n",dog->name);
-  printf("Tipo:\t%s\n",dog->type);
-  printf("Raza:\t%s\n",dog->breed);
-	printf("Edad:\t%hu\n",dog->age);
-	printf("Altura:\t%hu\n",dog->height);
-  printf("Peso:\t%2.2f\n",dog->weight);
-	printf("Genero:\t%c\n",dog->gender);
+	printf("\n\tId:\t\t%u\n",dog->id);
+  printf("\tPosición:\t%u\n",dog->position);
+  printf("\tNombre:\t\t%s\n",dog->name);
+  printf("\tTipo:\t\t%s\n",dog->type);
+  printf("\tRaza:\t\t%s\n",dog->breed);
+	printf("\tEdad:\t\t%hu\n",dog->age);
+	printf("\tAltura:\t\t%hu\n",dog->height);
+  printf("\tPeso:\t\t%2.2f\n",dog->weight);
+	printf("\tGenero:\t\t%c\n\n",dog->gender);
 }
 
 //Función que imprime la cabecera de la tabla que muestra los nombres que coinciden con el campo introducido en la función de busqueda de un registro

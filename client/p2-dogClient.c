@@ -57,25 +57,25 @@ void menu(int sd){ // Menú que despliega las opciones
 	char input[32];
 	int num = 0, r;
 	printf("*--------------------------------------------------*\n");
-	printf("*\t\tTienda de mascotas                            *\n");
+	printf("*\t\tTienda de mascotas                 *\n");
 	printf("*--------------------------------------------------*\n");
-	printf("*\t1\tIngresar registro                            *\n");
-	printf("*\t2\tVer registro                                 *\n");
-	printf("*\t3\tBorrar registro                              *\n");
-	printf("*\t4\tBuscar registro                              *\n");
-	printf("*\t5\tSalir                                        *\n");
+	printf("*\t1\tIngresar registro                  *\n");
+	printf("*\t2\tVer registro                       *\n");
+	printf("*\t3\tBorrar registro                    *\n");
+	printf("*\t4\tBuscar registro                    *\n");
+	printf("*\t5\tSalir                              *\n");
 	printf("*--------------------------------------------------*\n");
 
 	/*En caso de no ingresar un numero dentro de las opciones expuestas,
 	  se volverá a solicitar el ingreso de la opcion*/
 	do{
-		printf("Ingrese la opcion deseada: ");
+		printf("\tIngrese la opcion deseada: ");
 		scanf("%32s", input);
-    printf("Opcion %s: ", input);
+    printf("\tOpcion %s: ", input);
 		num = input[0]-48;
 
 		if (strlen(input) != 1 || num < 1 || num > 5)
-			printf("%s\n", "El valor ingresado no es valido, intente de nuevo");
+			printf("%s\n", "\tEl valor ingresado no es valido, intente de nuevo");
 
 	}while(strlen(input) != 1 || num < 1 || num > 5);
 
@@ -108,7 +108,7 @@ void menu(int sd){ // Menú que despliega las opciones
 
 void exeMenu(int sd){ // Función que reejecuta el menú
   static struct termios newt, oldt;
-  printf("\t\nPresione una tecla para continuar...");
+  printf("\n\tPresione una tecla para continuar...");
   tcgetattr( STDIN_FILENO, &oldt);  // Obteniendo la configuracion actual de la terminal
   newt = oldt;        // Copiando la configuracion
 	//	Desactivando las banderas ECHO e ICANON
@@ -136,18 +136,18 @@ void addReg(int sd){ // Función que añade un registro a al archivo
 	int rightValue = 0, next, code = 0, i;
 
 	// Captura de los datos de la mascota
-	printf("\t%s", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres,\nsi lo hace solo se guardaran los primeros 32: "); // Captura del nombre
+	printf("\t%s", "Ingrese el nombre de la mascota, este no debe superar los 32 caracteres,\n\tsi lo hace solo se guardaran los primeros 32: "); // Captura del nombre
 	getchar();
 	fgets(petName, NAME_SIZE, stdin);
 	petName[strlen(petName)-1]=0;
 	printf("\tNombre ingresado: %s\n", petName);
 
-	printf("\t%s", "Ingrese el tipo de la mascota, este no debe superar los 32 caracteres \nsi lo hace solo se guardaran los primeros 32: "); // Captura del tipo
+	printf("\t%s", "Ingrese el tipo de la mascota, este no debe superar los 32 caracteres \n\tsi lo hace solo se guardaran los primeros 32: "); // Captura del tipo
 	fgets(type, NAME_SIZE, stdin);
 	type[strlen(type)-1]=0;
 	printf("\tTipo ingresado: %s\n", type);
 
-	printf("\t%s","Ingrese la raza de la mascota, este no debe superar los 32 caracteres, \nsi lo hace solo se guardaran los primeros 32: "); // Captura de la raza
+	printf("\t%s","Ingrese la raza de la mascota, este no debe superar los 32 caracteres, \n\tsi lo hace solo se guardaran los primeros 32: "); // Captura de la raza
 	fgets(breed, NAME_SIZE, stdin);
 	breed[strlen(breed)-1]=0;
 	printf("\tRaza ingresada: %s\n", breed);
@@ -221,7 +221,7 @@ void seeReg(int sd){ //	Función que permite ver un registro de dataDogs.dat
   checkRecv( sd, &totalSize, sizeof(int), MSG_WAITALL, "totalSize"); // Recibe el tamaño del archivo dataDogs desde el servidor
   printf("\tEl número de registros es de: %i\n",totalSize);
 	do{
-		printf("\t%s\n", "Ingrese el número del registro a consultar");
+		printf("\t%s ", "Ingrese el número del registro a consultar");
 		scanf("%d", &numberReg);
 		if(numberReg < 1 || numberReg > totalSize){ // Si el numero ingresado se sale del rango de registros el registro solicitado no existe
 			printf("\t%s\n", "Este registro no existe");
@@ -236,7 +236,7 @@ void seeReg(int sd){ //	Función que permite ver un registro de dataDogs.dat
       free(newDog); // Libera la estructura temporal
       printf("\tConsulta de registro exitosa\n");
 
-      printf("\t%s\n", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
+      printf("\t%s ", "Desea abrir la historia clínica del registro seleccionado Escriba S o N");
 			scanf(" %c", &ans);
 
       checkSend(sd, &ans, sizeof(char), 0, "ans"); // Envía la respuesta al servidor
@@ -332,7 +332,7 @@ void deleteReg(int sd){ // Función que elimina un registro de datadogs.dat
   printf("\tEl número de registros es de: %i\n",totalSize);
 
   do{
-    printf("\t%s\n", "Ingrese la posición del registro a eliminar");
+    printf("\t%s ", "Ingrese la posición del registro a eliminar");
   	scanf("%i", &delReg);
   	if(delReg < 1 || delReg > totalSize){ // Si el número ingresado se sale del rango de dataDogs el registro no existe
   		printf("\t%s\n", "El registro que desea eliminar no existe");
