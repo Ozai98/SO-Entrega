@@ -11,6 +11,7 @@
 #define PORT 3535
 #define SERVER_LOG_PATH "ServerDogs.log"
 #define NUM_THREADS 32
+
 #define MAX_PROCCESS 1
 #define SEMAPHORE_NAME "semaphore_name"
 #define SEMAPHORE_OPTION 1
@@ -22,11 +23,11 @@ struct threadArgs{ // Estructura que contiene el descriptor y la IP de un client
 	int clientsd;
 	char ip[INET6_ADDRSTRLEN];
 };
-int critialSectionControlOption = SEMAPHORE_OPTION;
+int critialSectionControlOption = SEMAPHORE_OPTION; // Selector de la opcion a usar para el manejo de las secciones criticas
 sem_t *semaphore; // Variable semaforo de control para las secciones criticas
-static pthread_mutex_t *mymutex;
-int pipefd[2];
-char guard = 'T';
+static pthread_mutex_t *mymutex; // Variable mutex de control para las secciones criticas
+int pipefd[2]; // Variable de tubería de control para las secciones criticas
+char guard = 'T'; // Testigo a usar por la tubería de control para las secciones criticas
 // Instanciación de las funciones
 int hashTable[HASH_TABLE_SIZE];
 void* menu(void *ptr);
@@ -81,34 +82,33 @@ int main(){
     exit(-1);
 	}
 
-	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		sem_unlink(SEMAPHORE_NAME);
-		// if(sem_unlink(SEMAPHORE_NAME) == -1){
-		// 	perror("Semaphore unlink error");
-		// 	exit(-1);
-		// }
+
+	// Selector de la opcion de control de secciones criticas a usar
+	if(critialSectionControlOption == SEMAPHORE_OPTION){ // Inicialicialización del semaforo
+		sem_unlink(SEMAPHORE_NAME); // Remueve el semaforo nombrado por SEMAPHORE_NAME
+		// Crea o abre el semaforo nombrado por SEMAPHORE_NAME
+		// con una cantidad de procesos en ejecución para las secciones criticas de MAX_PROCCESS
 		semaphore = sem_open(SEMAPHORE_NAME, O_CREAT, 0700, MAX_PROCCESS);
 		if(semaphore == SEM_FAILED){
 			perror("Semaphore create error");
 			exit(-1);
 		}
-	}else if(critialSectionControlOption == MUTEX_OPTION){
-		mymutex = (void*)malloc(sizeof(pthread_mutex_t));
+	}else if(critialSectionControlOption == MUTEX_OPTION){ // Inicialicialización del mutex
+		mymutex = (void*)malloc(sizeof(pthread_mutex_t)); // Separa el espacio en memoria para el mutex
 		if(mymutex == NULL){
 			perror("Semaphore create error");
 			exit(-1);
 		}
-		if(pthread_mutex_init(mymutex, NULL) != 0){
+		if(pthread_mutex_init(mymutex, NULL) != 0){ // Inicializa el mutex
 			perror("pthread_mutex_init error");
 			exit(-1);
 		}
-	}else if(critialSectionControlOption == PIPE_OPTION){
-		if(pipe(pipefd) != 0) {
+	}else if(critialSectionControlOption == PIPE_OPTION){ // Inicialicialización de la tubería
+		if(pipe(pipefd) != 0) { // Crea la tubería y asigna los descriptores a piprfd
 			perror("pipe error");
 			exit(-1);
 		}
-		printf("%c\n", guard);
-		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) { // escribe el testigo una vez, para el uso de un solo proceso en las zonas críticas
 			perror("write error");
 			exit(-1);
 		}
@@ -134,16 +134,16 @@ int main(){
       exit(-1);
     }
 	}
+
+	// Selector de la opcion de control de secciones criticas a usar
 	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		sem_close(semaphore);
+		sem_close(semaphore); // Cierra el semaforo nombrado
 	}else if(critialSectionControlOption == MUTEX_OPTION){
-		if(pthread_mutex_destroy(mymutex) != 0){
+		if(pthread_mutex_destroy(mymutex) != 0){ // Destruye el mutex referenciado por mymutex
 			perror("pthread_mutex_destroy error");
 			exit(-1);
 		}
-		free(mymutex);
-	}else if(critialSectionControlOption == PIPE_OPTION){
-
+		free(mymutex); // libera el espacio en memoría usado por mymutex
 	}
   close(serversd);
 }
@@ -221,19 +221,21 @@ void recvNewReg(void *ptr){
 	checkfclose(fptc, CURRENT_ID_PATH);
 	int code = (int)htHashFunction(newDog->name); // Calcula la hash de la nueva mascota
 	int next = hashTable[code]; // Obtiene la posición del anterior con la misma hash
+
+	// Selector de opcion de control de secciones criticas a usar
 	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		if(sem_wait(semaphore) == -1){
+		if(sem_wait(semaphore) == -1){ // Decrementa el semaforo
 			perror("Semaphore wait error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == MUTEX_OPTION){
-		if(pthread_mutex_lock(mymutex) != 0){
+		if(pthread_mutex_lock(mymutex) != 0){ // Bloquea el mutex
 			perror("pthread_mutex_lock error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == PIPE_OPTION){
 		char result;
-		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) {
+		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)){ // Lee el testigo escrito en la tubería
 			perror("read error");
 			exit(-1);
 		}
@@ -269,21 +271,19 @@ void recvNewReg(void *ptr){
   free(currDog);
 	checkfclose(fptr, DATA_DOGS_PATH); // Cierra dataDogs
 
-	// printf("sleep\n");
-	// sleep(10);
-	// printf("end\n");
+	// Selector de opcion de control de secciones criticas a usar
 	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		if(sem_post(semaphore) == -1){
+		if(sem_post(semaphore) == -1){ // Incrementa el semaforo
 			perror("Semaphore post error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == MUTEX_OPTION){
-		if(pthread_mutex_unlock(mymutex) != 0){
+		if(pthread_mutex_unlock(mymutex) != 0){ // Desbloquea el mutex
 			perror("pthread_mutex_unlock error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == PIPE_OPTION){
-		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)){ // Escribe el testigo en la tubería
 			perror("write error");
 			exit(-1);
 		}
@@ -329,19 +329,20 @@ void recvDeleteReg(void *ptr){
 	char returnedDog[10];
 	bzero(consultedDog, (int)sizeof(consultedDog));
 	bzero(returnedDog, (int)sizeof(returnedDog));
+	// Selector de opcion de control de secciones criticas a usar
 	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		if(sem_wait(semaphore) == -1){
+		if(sem_wait(semaphore) == -1){ // Decrementa el semaforo
 			perror("Semaphore wait error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == MUTEX_OPTION){
-		if(pthread_mutex_lock(mymutex) != 0){
+		if(pthread_mutex_lock(mymutex) != 0){ // Bloquea el mutex
 			perror("pthread_mutex_lock error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == PIPE_OPTION){
 		char result;
-		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) {
+		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) { // Lee el testigo escrito en la tubería
 			perror("read error");
 			exit(-1);
 		}
@@ -386,21 +387,20 @@ void recvDeleteReg(void *ptr){
 	checkfclose(tempDataDogs, TEMP_DATA_DOGS_PATH);
 	remove(DATA_DOGS_PATH); // Elimina dataDogs renombra tempDataDogs como dataDogs
 	rename(TEMP_DATA_DOGS_PATH, DATA_DOGS_PATH);
-	// printf("sleep\n");
-	// sleep(10);
-	// printf("end\n");
+
+	// Selector de opcion de control de secciones criticas a usar
 	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		if(sem_post(semaphore) == -1){
+		if(sem_post(semaphore) == -1){ // Incrementa el semaforo
 			perror("Semaphore post error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == MUTEX_OPTION){
-		if(pthread_mutex_unlock(mymutex) != 0){
+		if(pthread_mutex_unlock(mymutex) != 0){ // Desbloquea el mutex
 			perror("pthread_mutex_unlock error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == PIPE_OPTION){
-		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)){ // Escribe el testigo en la tubería
 			perror("write error");
 			exit(-1);
 		}
@@ -433,19 +433,20 @@ void showSearch(void *ptr){
 		menu(args);
 		return;
 	}
+	// Selector de opcion de control de secciones criticas a usar
 	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		if(sem_wait(semaphore) == -1){
+		if(sem_wait(semaphore) == -1){ // Decrementa el semaforo
 			perror("Semaphore wait error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == MUTEX_OPTION){
-		if(pthread_mutex_lock(mymutex) != 0){
+		if(pthread_mutex_lock(mymutex) != 0){ // Bloquea el mutex
 			perror("pthread_mutex_lock error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == PIPE_OPTION){
 		char result;
-		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) {
+		if(read(pipefd[0], &result, sizeof(char)) != sizeof(char)) { // Lee el testigo escrito en la tubería
 			perror("read error");
 			exit(-1);
 		}
@@ -487,21 +488,20 @@ void showSearch(void *ptr){
 	generateLog("Busqueda", args->ip, "Múltiples", name); // Genera el log de la búsqueda
 	free(newDog); // Libera la estructura auxiliar
 	checkfclose(dataDogs, DATA_DOGS_PATH); // Cierra dataDogs
-	// printf("sleep\n");
-	// sleep(10);
-	// printf("end\n");
+
+	// Selector de opcion de control de secciones criticas a usar
 	if(critialSectionControlOption == SEMAPHORE_OPTION){
-		if(sem_post(semaphore) == -1){
+		if(sem_post(semaphore) == -1){ // Incrementa el semaforo
 			perror("Semaphore post error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == MUTEX_OPTION){
-		if(pthread_mutex_unlock(mymutex) != 0){
+		if(pthread_mutex_unlock(mymutex) != 0){ // Desbloquea el mutex
 			perror("pthread_mutex_unlock error");
 			exit(-1);
 		}
 	}else if(critialSectionControlOption == PIPE_OPTION){
-		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)) {
+		if(write(pipefd[1], &guard, sizeof(char)) != sizeof(char)){ // Escribe el testigo en la tubería
 			perror("write error");
 			exit(-1);
 		}
