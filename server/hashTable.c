@@ -31,7 +31,7 @@ void htLoad(int* hashTable){// Función que carga la hashTable con los registros
 	fseek(dataDogs, 0, SEEK_END); // Ubicar el descriptor al final del archivo
 	int nStructures = ftell(dataDogs)/sizeof(struct dogType); // Calcular el número de estructuras en datadogs.dat
 	rewind(dataDogs); // Reestablecer la posición del descriptor
-	htInit(hashTable); // Inicializar la hasTable
+	htInit(hashTable); // Inicializar la hashTable
 
 	for(i = 0; i < nStructures; i++){ // Carga cada una de las estructuras
 		filePointer = ftell(dataDogs); // Guarda el descriptor donde inicia la estrucrura
@@ -72,7 +72,7 @@ int htSearch(int* hashTable, char* name){// Función que busca un valor en la ha
 			fread(newDog, sizeof(struct dogType), 1, dataDogs); // Lee la estructura
 			strcpy(dogNameAux, newDog->name);
 
-			for(i = 0; i < strlen(dogNameAux); i++){
+			for(i = 0; i < strlen(dogNameAux); i++){ // Pasar a minusculas el nombre a comparar
 				dogNameAux[i] = tolower(dogNameAux[i]);
 			}
 
@@ -82,9 +82,10 @@ int htSearch(int* hashTable, char* name){// Función que busca un valor en la ha
 					success = 1;
 				}
 			}
+
 			showDogTypeTable(newDog); // Imprime la mascota encontrada que coincide con el nombre buscado
 			next = newDog->next;
-		}while(next != 0); // Mientras hayan mascotas en la hashtable
+		}while(next != 0); // Mientras hayan mascotas en la hashtable que coincidan con el nombre buscado
 
 		free(newDog); // Libera la estructura auxiliar
 		checkfclose(dataDogs, DATA_DOGS_PATH); // Cierra datadogs

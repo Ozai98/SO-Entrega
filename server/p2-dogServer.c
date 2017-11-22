@@ -19,7 +19,7 @@
 #define PIPE_OPTION 3
 
 
-struct threadArgs{ // Estructura que contiene el descriptor y la IP de un cliente entrante
+struct threadArgs{ // Estructura que contiene el descriptor de la socket y la IP de un cliente entrante
 	int clientsd;
 	char ip[INET6_ADDRSTRLEN];
 };
@@ -55,20 +55,20 @@ int main(){
     exit(-1);
   }
 
-
   // Configura la socket
   server.sin_family = AF_INET;
   server.sin_port = htons(PORT);
   server.sin_addr.s_addr = INADDR_ANY;
   bzero(server.sin_zero, 8);
 	serverSize = sizeof(struct sockaddr);
-	//Configura la reutilización del puerto de comunicación
+
+	// Configura la reutilización del puerto de comunicación
 	optval = 1;
 
 	if (setsockopt(serversd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval)) < 0)
     perror("setsockopt(SO_REUSEADDR) failed");
 
-	//Nombra la socket
+  // Asigna el nombre a la socket
   r = bind(serversd, (struct sockaddr*)&server, serverSize);
 	if(r == -1){
     perror("Bind error\n");
@@ -153,7 +153,7 @@ void *menu(void* ptr){
 	struct threadArgs* args = ptr;
 	int clientsd = args->clientsd;
   int option;
-  checkRecv(clientsd, &option, sizeof(int), MSG_WAITALL, "option"); // Recibe la opción que el cliente quiere ejecutar
+  checkRecv(clientsd, &option, sizeof(int), MSG_WAITALL, "option"); // Recibe la opción que el cliente quiere realizar y la ejecuta
 
   switch (option) {
 		case 1:
@@ -186,11 +186,12 @@ char* timeAndDate(char* date){// Función que obtiene la fecha y hora actual del
 
 void generateLog(char* opType, char* ip, char* registry, char* searchedString){ // Funcion que genera una entrada al log del servidor
 	int index = 300;
-	char serverLogString[300];
+	char serverLogString[index];
 	char date[100];
-	char* currentDate = timeAndDate(date);
+	char* currentDate = timeAndDate(date); // Obtiene la fecha y hora del servidor
 	FILE* serverLog = checkfopen(SERVER_LOG_PATH, "a");
-	snprintf(serverLogString, sizeof(serverLogString), "[Fecha: %s] [Cliente: %s] [Operacion: %s] [Registro: %s] [Cadena buscada: %s]\n", currentDate, ip, opType, registry, searchedString);
+	snprintf(serverLogString, sizeof(serverLogString), "[Fecha: %s] [Cliente: %s] [Operacion: %s] [Registro: %s] [Cadena buscada: %s]\n",
+	 																										currentDate, 		ip, 				opType, 				registry, 				searchedString);
 	const char *ptr = strchr(serverLogString, '\n');
 
 	if(ptr)
@@ -218,7 +219,7 @@ void recvNewReg(void *ptr){
 	id += 1;
 	rewind(fptc);
 	fwrite(&id, sizeof(int), 1, fptc); // Escribe la id de la nueva mascota
-	checkfclose(fptc, CURRENT_ID_PATH);
+	checkfclose(fptc, CURRENT_ID_PATH); // Cierra fptc
 	int code = (int)htHashFunction(newDog->name); // Calcula la hash de la nueva mascota
 	int next = hashTable[code]; // Obtiene la posición del anterior con la misma hash
 
@@ -240,7 +241,7 @@ void recvNewReg(void *ptr){
 			exit(-1);
 		}
 	}
-  FILE* fptr = checkfopen(DATA_DOGS_PATH, "r+");
+  FILE* fptr = checkfopen(DATA_DOGS_PATH, "r+"); //Abre dataDogs
 
 	if(next == -1){ // Si la hash del nombre no tiene entradas, crea una entrada con la posición de la nueva mascota
 		fseek(fptr, 0, SEEK_END);
@@ -293,7 +294,7 @@ void recvNewReg(void *ptr){
 }
 
 void showReg(void *ptr){
-	struct threadArgs *args = ptr; // Inicializa variables de operación
+	struct threadArgs *args = ptr; // Inicializa variables de visualización
 	int clientsd = args->clientsd;
 	FILE* fptr = checkfopen(DATA_DOGS_PATH, "r");
 	char registryString [10];
@@ -349,25 +350,25 @@ void recvDeleteReg(void *ptr){
 	}
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r"); // Abre dataDogs
 	fseek(dataDogs, 0, SEEK_END);
-	int totalSize = ftell(dataDogs) / (sizeof(struct dogType));
+	int totalSize = ftell(dataDogs) / (sizeof(struct dogType)); // Calcula el tamaño de dataDogs
 	rewind(dataDogs);
 
   checkSend(clientsd, &totalSize, sizeof(int), 0, "totalSize"); // Envía el tamaño de dataDogs
   checkRecv(clientsd, &numReg, sizeof(int), MSG_WAITALL, "numReg"); // Recibe el número del registro a eliminar
   FILE* tempDataDogs = checkfopen(TEMP_DATA_DOGS_PATH, "w"); // Crea el archivo temporal de eliminación
-  struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType));
+  struct dogType* currDog = (struct dogType*)malloc(sizeof(struct dogType)); // Reserva el espacio de la estructura temporal
 
 	for(i = 0; i < totalSize; i++){ // Copia todos los registros en el archivo nuevo
 		filePointer = ftell(dataDogs);
-		fread(currDog, sizeof(struct dogType), 1, dataDogs);
+		fread(currDog, sizeof(struct dogType), 1, dataDogs); // Lee una mascota de dataDogs
 
-		if(filePointer == numReg*sizeof(struct dogType)){ // Cuando encuentra la mascota a eliminar, la envía al cliente para su visualización
+		if(filePointer == numReg*sizeof(struct dogType)){ // Si la mascota leída es la que desea eliminar, se la envía al cliente para su visualización
 			sprintf(returnedDog, "%d", currDog->id);
 			checkSend(clientsd, currDog, sizeof(struct dogType), 0, "currDog");
 			continue; // Salta la copia de la estructura a eliminar
 		}
 
-		if(filePointer > numReg*sizeof(struct dogType)) // Actualiza la posición de las estructuras que están adelante de la que se eliminó
+		if(filePointer > numReg*sizeof(struct dogType)) // Si la estructura a copiar esta adelante de la que se va a eliminar, actualiza su posición
 			currDog->position -= 1;
 
 		// Actualiza los next de las estructuras que sigan
@@ -430,11 +431,11 @@ void showSearch(void *ptr){
 	char name[NAME_SIZE];
 
 	checkRecv(clientsd, name, NAME_SIZE, MSG_WAITALL,"name"); // Recibe del cliente el nombre a buscar
-  int code = (int)htHashFunction(name);
+  int code = (int)htHashFunction(name); // Cacula la hash del nombre
 	int exists = hashTable[code] == -1 ? 0 : 1; // Verifica si el nombre existe
 	checkSend(clientsd, &exists, sizeof(int), 0, "exists"); // Envía el resultado de la verificación al cliente
 
-  if(!exists){ // Si no existe le informa al cliente y genera el log de la búsqueda
+  if(!exists){ // Si no existe le informa al cliente, genera el log de la búsqueda y sale de la operación
 		generateLog("Busqueda", args->ip, "No encontrado", name);
 		menu(args);
 		return;
@@ -461,14 +462,16 @@ void showSearch(void *ptr){
 	FILE* dataDogs = checkfopen(DATA_DOGS_PATH, "r"); //Abre dataDogs
 	struct dogType* newDog = (struct dogType*)malloc(sizeof(struct dogType)); // Reserva el espacio de la estructura auxiliar
 
-	char dogNameAux[NAME_SIZE];
+	char dogNameAux[NAME_SIZE]; // Crea variables auxiliares
 	char nameAux[NAME_SIZE];
 	strcpy(nameAux, name);
 
-	for(j = 0; j<strlen(nameAux); j++)
+	for(j = 0; j < strlen(nameAux); j++)
 		nameAux[j] = tolower(nameAux[j]);
+
 	int next = hashTable[code];
 	int hasDog = 0;
+
 	do{
 		fseek(dataDogs, next, SEEK_SET); // Ubica el descriptor en el inicio de una estructura con la hash del nombre a buscar
 		fread(newDog, sizeof(struct dogType), 1, dataDogs); // Lee la estructura
@@ -520,7 +523,7 @@ void openHistory(void *ptr, int dogId){
 	int clientsd = args->clientsd;
 	int r;
 	char ans;
-	checkRecv(clientsd, &ans, sizeof(char), MSG_WAITALL, "ans"); //Recibe del cliente la solicitud de apertura de historia clínica
+	checkRecv(clientsd, &ans, sizeof(char), MSG_WAITALL, "ans"); // Recibe del cliente la solicitud de apertura de historia clínica
 
 	if(ans == 's' || ans == 'S'){ // Si es afirmativa
 		struct stat file_stat;
@@ -541,25 +544,25 @@ void openHistory(void *ptr, int dogId){
 
 		// Si el archivo no existe
 		if(resp == 0){
-			FILE* edit = checkfopen(file_name_edit, "w"); // Crea el archivo de edición
+			FILE* edit = checkfopen(file_name_edit, "w"); // Crea el archivo que indica que esta historia clínica se encuentra abierta
 			checkfclose(edit, file_name_edit); 					  // Y lo cierra
 
-			checkRecv(clientsd, &fileSize, sizeof(int), MSG_WAITALL, "fileSize"); // Recibe del cliente el tamaño de la historia clínica escrita
-			int remain_data = fileSize;
+			checkRecv(clientsd, &fileSize, sizeof(int), MSG_WAITALL, "fileSize"); // Recibe del cliente el tamaño de la nueva historia clínica
+			int remain_data = fileSize; // Variable que cuenta la información pendiente por enviar
 			sprintf(file_name, "%i.txt", dogId);
 			FILE* myFile = checkfopen(file_name, "w"); // Crea la historia clínica en el servidor
 			int len;
 			char buffer[BUFSIZ];
 			while ((remain_data > 0) && ((len = checkRecv(clientsd, buffer, BUFSIZ, 0, "buffer")) > 0)){ // Mientras haya información por enviar
 				fwrite(buffer, sizeof(char), len, myFile); // Escribir en la historia clínica del servidor
-				remain_data -= len;
+				remain_data -= len; //Reducir la cantidad de información pendiente
 			}
 			checkfclose(myFile, file_name); // Cerrar la historia clínica
 			remove(file_name_edit); // Remover el archivo de edición
 		}
 
 		else if(resp == 1){ // Si la historia clínica existe
-			FILE* edit = checkfopen(file_name_edit, "w"); // Crea el archivo de edición
+			FILE* edit = checkfopen(file_name_edit, "w"); // Crea el archivo que indica que esta historia clínica se encuentra abierta
 			checkfclose(edit, file_name_edit); // Lo cierra
 			int fd = open(file_name, O_RDONLY); //Abre la historia clínica solicita en modo lectura
 			if (fd == -1){
@@ -572,11 +575,11 @@ void openHistory(void *ptr, int dogId){
 				exit(-1);
 			}
 
-			fileSize = (int)file_stat.st_size;
+			fileSize = (int)file_stat.st_size; // Genera el tamaño de la historia clinica
 			checkSend(clientsd, &fileSize, sizeof(int), 0, "fileSize"); // Envía el tamaño de la historia clínica al cliente
 			off_t offset = 0;
 			int sent_bytes = 0;
-			int remain_data = fileSize;
+			int remain_data = fileSize; // Variable que cuenta la información pendiente por enviar
 			while (((sent_bytes = sendfile(clientsd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)){ // Envía la historia clínica al cliente
 				remain_data -= sent_bytes;
 			}
