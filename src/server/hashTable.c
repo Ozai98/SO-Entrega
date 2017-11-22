@@ -7,20 +7,20 @@ void htLoad(int* hashTable);
 int htSearch(int* hashTable, char* name);
 
 
-void htInit(int* hashTable){// Función que inicializa la hashTable
+void htInit(int* hashTable){ // Función que inicializa la hashTable
 	int i = 0;
 	for(i = 0; i < HASH_TABLE_SIZE; i++)
 		hashTable[i] = -1;
 }
 
-unsigned long htHashFunction(char *str){
+unsigned long htHashFunction(char *str){ // Función que calcula la hash al nombre de una mascota
   unsigned long c, hash = 5381;
 	int i;
   for(i=0; i<strlen(str); i++){
 		c = tolower(*str++);
     hash = (hash << 5) + hash + c; /* hash * 33 + c */
 	}
-  return hash%HASH_TABLE_SIZE;
+  return hash%HASH_TABLE_SIZE; //Hash del nombre ingresado
 }
 
 void htLoad(int* hashTable){// Función que carga la hashTable con los registros de dataDogs.dat
@@ -51,7 +51,7 @@ void htLoad(int* hashTable){// Función que carga la hashTable con los registros
 
 
 
-int htSearch(int* hashTable, char* name){// Función que busca un valor en la hashTable
+int htSearch(int* hashTable, char* name){ // Función que busca en la hashTable coincidencias con el nombre solicitado
 	int success = 0, i = 0, j = 0; // Inicializar variables a usar
   char nameAux[NAME_SIZE];
   strcpy(nameAux, name);
