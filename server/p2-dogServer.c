@@ -371,14 +371,20 @@ void recvDeleteReg(void *ptr){
 			currDog->position -= 1;
 
 		// Actualiza los next de las estructuras que sigan
-		if(currDog->next > numReg*sizeof(struct dogType)){
+		if(currDog->next > numReg*sizeof(struct dogType)){ // En caso de que la referencia al siguiente, sea posterior al registro a eliminar
+			// Decrementa su valor en una estructura o deja en cero en caso de que el registro sea el ultimo en la lista enlazada
 			currDog->next = currDog->next==0 ? 0 : currDog->next - sizeof(struct dogType);
-		}else if(currDog->next == numReg*sizeof(struct dogType)){
+		}else if(currDog->next == numReg*sizeof(struct dogType)){ // En caso de que referencie al registro a eliminar
+			// Se posiciona en registro a eliminar
 			fseek(dataDogs, currDog->next, SEEK_SET);
+			// Guarda en la referencia al siguiente, el valor que tenía el registro a eliminar
 			fread(&currDog->next, sizeof(int), 1, dataDogs);
+			// Decrementa su valor en una estructura o deja en cero en caso de que el registro a eliminar sea el ultimo en la lista enlazada
 			currDog->next = currDog->next==0 ? 0 : currDog->next - sizeof(struct dogType);
+			// Reposiciona el indicador de posición del archivo al estado imediatamente posterior a la lectura de la estuctura actual currDog
 			fseek(dataDogs, filePointer + sizeof(struct dogType), SEEK_SET);
 		}
+		// Escribe la estructura actual en el archivo temporal
 		fwrite(currDog, sizeof(struct dogType), 1, tempDataDogs);
 	}
 
